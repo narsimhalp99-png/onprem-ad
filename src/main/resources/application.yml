@@ -1,0 +1,58 @@
+spring:
+  application:
+    name: onprem-ad
+  ldap:
+    search-subtree: true
+    base: "DC=mycomp,DC=com"
+    urls: "ldap://WIN-MMN2C3CV8L4:389"
+#    username: "CN=ldap-reader,OU=ServiceAccounts,DC=mycomp,DC=com"
+    username: "administrator@mycomp.com"
+    password: "@Simhalp9"
+    base-environment:
+      java.naming.referral: ignore
+      java.naming.ldap.attributes.binary: objectGUID
+  main:
+    allow-bean-definition-overriding: true
+
+logging:
+  level:
+    org:
+      springframework:
+        security=DEBUG:
+
+ldap:
+  user:
+    base-filter: "(objectCategory=person)"
+    default-attributes:
+      - distinguishedName
+      - cn
+      - mail
+      - sAMAccountName
+      - givenName
+      - sn
+      - name
+      - userPrincipalName
+  group:
+    base-filter: "(objectClass=group)"
+    default-attributes:
+      - distinguishedName
+      - groupCategory
+      - groupScope
+      - cn
+      - name
+      - sAMAccountName
+      - description
+      - member
+      - objectGUID
+  computer:
+    base-filter: "(objectClass=computer)"
+    default-attributes:
+      - distinguishedName
+      - groupCategory
+      - groupScope
+      - cn
+      - name
+      - sAMAccountName
+      - description
+      - member
+      - objectGUID
