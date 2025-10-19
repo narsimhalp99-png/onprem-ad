@@ -18,8 +18,8 @@ import java.util.*;
 public class ComputerRepository {
 
 
-    @Value("${ldap.user.base-filter:''}")
-    String userBaseFilter;
+    @Value("${ldap.computer.base-filter:''}")
+    String computerBaseFilter;
 
     @Autowired
     LdapTemplate ldapTemplate;
@@ -103,7 +103,7 @@ public class ComputerRepository {
 
 
     private String getFilter(String filter){
-        String baseFilter = userBaseFilter;
+        String baseFilter = computerBaseFilter;
 
         String combinedFilter;
         if (filter != null && !filter.trim().isEmpty()) {
