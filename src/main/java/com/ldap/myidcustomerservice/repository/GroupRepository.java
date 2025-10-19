@@ -219,20 +219,23 @@ public class GroupRepository {
     public ModifyGroupResponse modifyGroup(ManageGroupRequest request) {
         ModifyGroupResponse response = new ModifyGroupResponse();
         List<String> userNotExistList = new ArrayList<>();
+        List<String> errors = new ArrayList<>();
         response.setUserNotExist(userNotExistList);
+        response.setErrors(errors);
+
         try {
             // Validate group DN
             if (!isDnExists(request.getGroupDn())) {
                 throw new IllegalArgumentException("Group DN does not exist: " + request.getGroupDn());
             }
 
-            //  Validate operation type
+            // Validate operation
             String operation = request.getOperation().toUpperCase();
             if (!operation.equals("ADD") && !operation.equals("REMOVE")) {
                 throw new IllegalArgumentException("Invalid operation: " + operation + ". Use ADD or REMOVE.");
             }
 
-            //  Validate user list
+            // Validate user list
             List<String> userDns = request.getUserDns();
             if (userDns == null || userDns.isEmpty()) {
                 throw new IllegalArgumentException("User DN list cannot be empty.");
@@ -241,39 +244,50 @@ public class GroupRepository {
             if (userDns.size() > 100) {
                 throw new IllegalArgumentException("Maximum 100 user DNs can be processed at a time.");
             }
+
+            // Prepare group name (without DC parts)
             String grpName = request.getGroupDn().replaceAll(",DC=.*", "");
             Name groupName = LdapNameBuilder.newInstance(grpName).build();
 
+            // Step 1: Separate valid and invalid users
+            List<String> validUserDns = new ArrayList<>();
             for (String userDn : userDns) {
-                if (!isDnExists(userDn)) {
+                if (isDnExists(userDn)) {
+                    validUserDns.add(userDn);
+                } else {
                     userNotExistList.add(userDn);
-//                    response.getErrors().add("User DN does not exist: " + userDn);
-                    continue;
-                }
-
-                Attribute memberAttr = new BasicAttribute("member", userDn);
-                try {
-                    if ("ADD".equalsIgnoreCase(operation)) {
-                        ldapTemplate.modifyAttributes(groupName, new ModificationItem[]{
-                                new ModificationItem(DirContext.ADD_ATTRIBUTE, memberAttr)
-                        });
-                    } else {
-                        ldapTemplate.modifyAttributes(groupName, new ModificationItem[]{
-                                new ModificationItem(DirContext.REMOVE_ATTRIBUTE, memberAttr)
-                        });
-                    }
-
-                } catch (Exception e) {
-                    response.getErrors().add("Failed for " + userDn + ": " + e.getLocalizedMessage());
                 }
             }
 
-            if (response.getErrors().isEmpty() && response.getUserNotExist().isEmpty()) {
+            // Step 2: If there are valid users, process them in ONE LDAP call
+            if (!validUserDns.isEmpty()) {
+                Attribute memberAttr = new BasicAttribute("member");
+                validUserDns.forEach(memberAttr::add);
+
+                ModificationItem modItem;
+                if ("ADD".equalsIgnoreCase(operation)) {
+                    modItem = new ModificationItem(DirContext.ADD_ATTRIBUTE, memberAttr);
+                } else {
+                    modItem = new ModificationItem(DirContext.REMOVE_ATTRIBUTE, memberAttr);
+                }
+
+                try {
+                    ldapTemplate.modifyAttributes(groupName, new ModificationItem[]{modItem});
+                } catch (Exception e) {
+                    errors.add("LDAP operation failed: " + e.getLocalizedMessage());
+                }
+            }
+
+            // Step 3: Prepare final response
+            if (errors.isEmpty() && userNotExistList.isEmpty()) {
                 response.setStatusCode("SUCCESS");
                 response.setMessage("All members processed successfully (" + operation + ")");
-            } else {
+            } else if (!validUserDns.isEmpty()) {
                 response.setStatusCode("PARTIAL_SUCCESS");
-                response.setMessage("Some members failed during " + operation + " operation.");
+                response.setMessage("Some members failed or were invalid during " + operation + " operation.");
+            } else {
+                response.setStatusCode("FAILED");
+                response.setMessage("No valid members to process. All user DNs were invalid.");
             }
 
         } catch (Exception e) {
