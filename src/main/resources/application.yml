@@ -1,10 +1,25 @@
 spring:
   application:
     name: onprem-ad
+  datasource:
+    url: jdbc:sqlserver://localhost:1433;databaseName=userdb;encrypt=true;trustServerCertificate=true
+    username: sa
+    password: admin
+    driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.SQLServerDialect
+
+
   ldap:
     search-subtree: true
     base: "DC=mycomp,DC=com"
     urls: "ldap://WIN-MMN2C3CV8L4:389"
+
 #    username: "CN=ldap-reader,OU=ServiceAccounts,DC=mycomp,DC=com"
     username: "administrator@mycomp.com"
     password: "@Simhalp9"
@@ -13,6 +28,7 @@ spring:
       java.naming.ldap.attributes.binary: objectGUID
   main:
     allow-bean-definition-overriding: true
+
 
 logging:
   level:
