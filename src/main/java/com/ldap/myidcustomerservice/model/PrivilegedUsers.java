@@ -7,8 +7,8 @@ import lombok.Data;
 
 @Data
 @Entity
-@Table(name = "users")
-public class User {
+@Table(name = "privileged_users")
+public class PrivilegedUsers {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -17,4 +17,5 @@ public class User {
     private String username;
     private String password;
     private String role;
+    private String status;
 }

@@ -19,8 +19,6 @@ spring:
     search-subtree: true
     base: "DC=mycomp,DC=com"
     urls: "ldap://WIN-MMN2C3CV8L4:389"
-
-#    username: "CN=ldap-reader,OU=ServiceAccounts,DC=mycomp,DC=com"
     username: "administrator@mycomp.com"
     password: "@Simhalp9"
     base-environment:

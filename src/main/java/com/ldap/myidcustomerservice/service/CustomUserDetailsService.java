@@ -2,8 +2,9 @@ package com.ldap.myidcustomerservice.service;
 
 
 
-import com.ldap.myidcustomerservice.model.User;
-import com.ldap.myidcustomerservice.repository.UsersRepository;
+import com.ldap.myidcustomerservice.model.PrivilegedUsers;
+import com.ldap.myidcustomerservice.repository.PrivilegedUsersRepository;
+import com.ldap.myidcustomerservice.repository.PrivilegedUsersRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.userdetails.*;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -14,15 +15,15 @@ import java.util.Collections;
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
 
-    private final UsersRepository userRepository;
+    private final PrivilegedUsersRepository privilegedUsersRepository;
 
-    public CustomUserDetailsService(UsersRepository userRepository) {
-        this.userRepository = userRepository;
+    public CustomUserDetailsService(PrivilegedUsersRepository privilegedUsersRepository) {
+        this.privilegedUsersRepository = privilegedUsersRepository;
     }
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        User user = userRepository.findByUsername(username)
+        PrivilegedUsers user = privilegedUsersRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
         log.info("user fetched is:::{}",user, user.toString());
