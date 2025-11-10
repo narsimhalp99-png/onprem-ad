@@ -3,22 +3,29 @@ package com.ldap.myidcustomerservice.repository;
 import com.ldap.myidcustomerservice.dto.UsersRequest;
 import com.ldap.myidcustomerservice.mapper.LdapUserProperties;
 import com.ldap.myidcustomerservice.mapper.UserAttributesMapper;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.ldap.control.PagedResultsDirContextProcessor;
 import org.springframework.ldap.core.LdapTemplate;
 import org.springframework.ldap.core.AttributesMapper;
+import org.springframework.ldap.core.support.LdapContextSource;
 import org.springframework.stereotype.Repository;
+
+import javax.naming.PartialResultException;
 import javax.naming.directory.SearchControls;
 import java.util.*;
+import java.util.regex.Pattern;
 
-
-
+@Slf4j
 @Repository
 public class UserRepository {
 
     @Value("${ldap.user.base-filter:''}")
     String userBaseFilter;
+
+    @Value("${spring.ldap.base:''}")
+    String defaultBase;
 
     @Autowired
     LdapTemplate ldapTemplate;
@@ -27,11 +34,14 @@ public class UserRepository {
     LdapUserProperties ldapUserProperties;
 
 
+
     public Map<String, Object> getUsersPaged(UsersRequest request) {
         Map<String, Object> response = new HashMap<>();
         List<Map<String, Object>> page = Collections.emptyList();
         String searchBaseOU =  request.getSearchBaseOU()!=null ? request.getSearchBaseOU() : "";
-        searchBaseOU = searchBaseOU.replaceAll(",DC=.*", "");
+//        searchBaseOU = searchBaseOU.replaceAll(",DC=.*", "");
+        searchBaseOU = searchBaseOU.replaceAll(",?" + Pattern.quote(defaultBase) + "$", "");
+        searchBaseOU = searchBaseOU.isEmpty() ? null : searchBaseOU;
         // Combine default + custom attributes
         Set<String> attributes = new LinkedHashSet<>(ldapUserProperties.getDefaultAttributes());
         if (request.getAddtnlAttributes() != null && !request.getAddtnlAttributes().isEmpty()) {
@@ -63,7 +73,7 @@ public class UserRepository {
 
         while (true) {
             page = ldapTemplate.search(
-                    searchBaseOU,
+                    "",
                     getFilter(request.getFilter()),
                     searchControls,
                     new UserAttributesMapper(attributes),
@@ -97,8 +107,11 @@ public class UserRepository {
         SearchControls controls = new SearchControls();
         controls.setSearchScope(SearchControls.SUBTREE_SCOPE);
         controls.setReturningAttributes(new String[]{"distinguishedName"});
-        List<?> allUsers = ldapTemplate.search(searchBaseOU, getFilter(filter), controls, (AttributesMapper<Object>) attrs -> null);
+        List<?> allUsers = ldapTemplate.search("", getFilter(filter), controls, (AttributesMapper<Object>) attrs -> null);
+
         return allUsers.size();
+
+
     }
 
 
