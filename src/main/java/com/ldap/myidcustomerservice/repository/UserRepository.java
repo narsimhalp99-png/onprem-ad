@@ -41,7 +41,7 @@ public class UserRepository {
         String searchBaseOU =  request.getSearchBaseOU()!=null ? request.getSearchBaseOU() : "";
 //        searchBaseOU = searchBaseOU.replaceAll(",DC=.*", "");
         searchBaseOU = searchBaseOU.replaceAll(",?" + Pattern.quote(defaultBase) + "$", "");
-        searchBaseOU = searchBaseOU.isEmpty() ? null : searchBaseOU;
+//        searchBaseOU = searchBaseOU.isEmpty() ? null : searchBaseOU;
         // Combine default + custom attributes
         Set<String> attributes = new LinkedHashSet<>(ldapUserProperties.getDefaultAttributes());
         if (request.getAddtnlAttributes() != null && !request.getAddtnlAttributes().isEmpty()) {

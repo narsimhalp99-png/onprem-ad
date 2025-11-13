@@ -18,6 +18,7 @@ import javax.naming.Name;
 import javax.naming.NamingEnumeration;
 import javax.naming.directory.*;
 import java.util.*;
+import java.util.regex.Pattern;
 
 @Slf4j
 @Repository
@@ -27,7 +28,7 @@ public class GroupRepository {
     String groupBaseFilter;
 
     @Value("${spring.ldap.base:''}")
-    String ldapBase;
+    String defaultBase;
 
     @Autowired
     LdapTemplate ldapTemplate;
@@ -39,7 +40,8 @@ public class GroupRepository {
         Map<String, Object> response = new HashMap<>();
         List<Map<String, Object>> page = Collections.emptyList();
         String searchBaseOU = request.getSearchBaseOU() != null ? request.getSearchBaseOU() : "";
-        searchBaseOU = searchBaseOU.replaceAll(",DC=.*", "");
+        searchBaseOU = searchBaseOU.replaceAll(",?" + Pattern.quote(defaultBase) + "$", "");
+//        searchBaseOU = searchBaseOU.replaceAll(",DC=.*", "");
         // Combine default + custom attributes
         Set<String> attributes = new LinkedHashSet<>(ldapGroupProperties.getDefaultAttributes());
         if (request.getAddtnlAttributes() != null && !request.getAddtnlAttributes().isEmpty()) {

@@ -13,6 +13,7 @@ import org.springframework.stereotype.Repository;
 
 import javax.naming.directory.SearchControls;
 import java.util.*;
+import java.util.regex.Pattern;
 
 @Repository
 public class ComputerRepository {
@@ -20,6 +21,9 @@ public class ComputerRepository {
 
     @Value("${ldap.computer.base-filter:''}")
     String computerBaseFilter;
+
+    @Value("${spring.ldap.base:''}")
+    String defaultBase;
 
     @Autowired
     LdapTemplate ldapTemplate;
@@ -32,7 +36,8 @@ public class ComputerRepository {
         Map<String, Object> response = new HashMap<>();
         List<Map<String, Object>> page = Collections.emptyList();
         String searchBaseOU =  request.getSearchBaseOU()!=null ? request.getSearchBaseOU() : "";
-        searchBaseOU = searchBaseOU.replaceAll(",DC=.*", "");
+        searchBaseOU = searchBaseOU.replaceAll(",?" + Pattern.quote(defaultBase) + "$", "");
+//        searchBaseOU = searchBaseOU.replaceAll(",DC=.*", "");
         // Combine default + custom attributes
         Set<String> attributes = new LinkedHashSet<>(ldapComputerProperties.getDefaultAttributes());
         if (request.getAddtnlAttributes() != null && !request.getAddtnlAttributes().isEmpty()) {

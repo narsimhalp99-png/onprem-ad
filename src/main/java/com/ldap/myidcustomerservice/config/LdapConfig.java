@@ -11,7 +11,7 @@ public class LdapConfig {
     @Bean
     public LdapTemplate ldapTemplate(LdapContextSource contextSource) {
         LdapTemplate template = new LdapTemplate(contextSource);
-        template.setIgnorePartialResultException(true);  // ✅ handles PartialResultException gracefully
+        template.setIgnorePartialResultException(true);
         return template;
     }
 }
