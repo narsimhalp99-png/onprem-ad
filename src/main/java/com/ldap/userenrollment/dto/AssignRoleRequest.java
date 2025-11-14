@@ -5,8 +5,7 @@ import lombok.Data;
 @Data
 public class AssignRoleRequest {
 
-    private Long roleId;
-    private String roleName;
+    private String roleId;
     private Boolean isRoleActive = true;
 
 }

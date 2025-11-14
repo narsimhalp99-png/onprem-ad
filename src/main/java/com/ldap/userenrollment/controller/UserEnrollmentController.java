@@ -1,8 +1,6 @@
 package com.ldap.userenrollment.controller;
 
-import com.ldap.userenrollment.dto.AssignRoleRequest;
 import com.ldap.userenrollment.entity.UserEntity;
-import com.ldap.userenrollment.entity.UserRoleMapping;
 import com.ldap.userenrollment.service.UserEnrollmentService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,16 +44,4 @@ public class UserEnrollmentController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/assignRoleById/{employeeId}/roles")
-    public ResponseEntity<UserRoleMapping> assignRole(@PathVariable Long employeeId,
-                                                      @RequestBody AssignRoleRequest req) {
-        UserRoleMapping mapping = svc.assignRole(employeeId, req);
-        return ResponseEntity.ok(mapping);
-    }
-
-    @DeleteMapping("/revokeRoleById/{employeeId}/roles/{roleId}")
-    public ResponseEntity<Void> revokeRole(@PathVariable Long employeeId, @PathVariable Long roleId) {
-        svc.revokeRole(employeeId, roleId);
-        return ResponseEntity.noContent().build();
-    }
 }

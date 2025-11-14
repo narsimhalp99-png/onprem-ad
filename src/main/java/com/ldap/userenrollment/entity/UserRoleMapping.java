@@ -4,12 +4,12 @@ import jakarta.persistence.*;
 import lombok.Data;
 
 import java.time.OffsetDateTime;
-
 @Data
 @Entity
-@Table(name = "UserRoleMapping")
+@Table(name = "UserRoleMapping",
+        uniqueConstraints = @UniqueConstraint(name = "UQ_UserRole_Employee_Role",
+                columnNames = {"EmployeeId", "AssignedRoleId"}))
 public class UserRoleMapping {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

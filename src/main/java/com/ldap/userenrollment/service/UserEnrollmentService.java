@@ -6,13 +6,18 @@ import com.ldap.userenrollment.entity.UserRoleMapping;
 import com.ldap.userenrollment.exception.NotFoundException;
 import com.ldap.userenrollment.repository.RoleRepository;
 import com.ldap.userenrollment.repository.UserEnrollmentRepository;
-import com.ldap.userenrollment.repository.UserRoleRepository;
+import com.ldap.userenrollment.repository.UserRoleMappingRepository;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.OffsetDateTime;
+import java.util.Objects;
 
 @Data
 @Service
@@ -25,7 +30,7 @@ public class UserEnrollmentService {
     RoleRepository roleRepo;
 
     @Autowired
-    UserRoleRepository userRoleRepo;
+    UserRoleMappingRepository userRoleRepo;
 
 
 
@@ -60,30 +65,6 @@ public class UserEnrollmentService {
         userRepo.delete(existing);
     }
 
-    @Transactional
-    public UserRoleMapping assignRole(Long employeeId, AssignRoleRequest req) {
-        if (employeeId == null) {
-            throw new IllegalArgumentException("EmployeeId must not be null");
-        }
 
-        if (req.getRoleName() == null || req.getRoleName().isBlank()) {
-            throw new IllegalArgumentException("AssignedRoleName must not be null or empty");
-        }
 
-        UserRoleMapping mapping = new UserRoleMapping();
-        mapping.setEmployeeId(employeeId);
-        mapping.setAssignedRoleId(req.getRoleName());
-        mapping.setAssignedRoleStatus(req.getIsRoleActive() == null || req.getIsRoleActive());
-
-        // assignedAt will be automatically set by @PrePersist
-        return userRoleRepo.save(mapping);
-    }
-
-    @Transactional
-    public void revokeRole(Long employeeId, Long roleId) {
-//        UserRoleId id = new UserRoleId(employeeId, roleId);
-        UserRoleMapping existing = userRoleRepo.findById(roleId)
-            .orElseThrow(() -> new NotFoundException("UserRole not found"));
-        userRoleRepo.delete(existing);
-    }
 }
