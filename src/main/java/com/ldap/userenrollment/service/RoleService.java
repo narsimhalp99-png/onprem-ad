@@ -33,39 +33,46 @@ public class RoleService {
 
     @Transactional
     public UserRoleMapping assignRole(Long employeeId, AssignRoleRequest req) {
-        if (employeeId == null) throw new IllegalArgumentException("EmployeeId must not be null");
+        if (employeeId == null)
+            throw new IllegalArgumentException("EmployeeId must not be null");
+
         if (req.getRoleId() == null || req.getRoleId().isBlank())
             throw new IllegalArgumentException("AssigningRoleId must not be null or empty");
 
         String roleId = req.getRoleId();
         Boolean isActive = req.getIsRoleActive() == null ? Boolean.TRUE : req.getIsRoleActive();
 
+
+        UserEntity userEntity = userRepo.findById(employeeId)
+                .orElseThrow(() -> new RuntimeException("User not found: " + employeeId));
+
+        // 🔍 Check if mapping already exists
         UserRoleMapping existing = userRoleRepo.findByEmployeeIdAndAssignedRoleId(employeeId, roleId);
 
         if (existing != null) {
-            // idempotent: update status if needed and return
+            // Idempotent update
             if (!Objects.equals(existing.getAssignedRoleStatus(), isActive)) {
                 existing.setAssignedRoleStatus(isActive);
-                // optionally update assignedAt to now if you want to track re-assign time
                 existing.setAssignedAt(OffsetDateTime.now());
                 return userRoleRepo.save(existing);
             }
             return existing;
         }
 
-        // create new mapping
+        // ➕ Create new mapping (DO NOT SET employeeId manually)
         UserRoleMapping mapping = new UserRoleMapping();
-        mapping.setEmployeeId(employeeId);
+        mapping.setUser(userEntity);           // FK
         mapping.setAssignedRoleId(roleId);
         mapping.setAssignedRoleStatus(isActive);
-        // assignedAt set in @PrePersist
+
         try {
             return userRoleRepo.save(mapping);
         } catch (DataIntegrityViolationException ex) {
-            // This should be rare if constraint exists; handle gracefully
-            // Either wrap and rethrow or fetch existing and return it (race condition)
+
+            // If unique constraint violated due to race condition, return existing
             UserRoleMapping already = userRoleRepo.findByEmployeeIdAndAssignedRoleId(employeeId, roleId);
             if (already != null) return already;
+
             throw ex;
         }
     }

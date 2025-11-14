@@ -1,9 +1,13 @@
 package com.ldap.userenrollment.entity;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Data;
+import org.hibernate.annotations.Where;
 
 import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.Map;
 
 @Data
 @Entity
@@ -25,6 +29,12 @@ public class UserEntity {
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
 
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+    @JsonManagedReference
+    private List<UserRoleMapping> roles;
+
+
+
     @PrePersist
     public void prePersist() {
         createdAt = OffsetDateTime.now();
@@ -33,5 +43,12 @@ public class UserEntity {
     @PreUpdate
     public void preUpdate() {
         updatedAt = OffsetDateTime.now();
+    }
+
+    public List<UserRoleMapping> getRoles() {
+        if (roles == null) return null;
+        return roles.stream()
+                .filter(UserRoleMapping::getAssignedRoleStatus)
+                .toList();
     }
 }

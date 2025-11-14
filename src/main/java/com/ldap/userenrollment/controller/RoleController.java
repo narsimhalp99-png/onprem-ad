@@ -17,7 +17,6 @@ public class RoleController {
     RoleService svc;
 
 
-
     @PostMapping("/assignRoleById/{employeeId}")
     public ResponseEntity<UserRoleMapping> assignRole(@PathVariable Long employeeId,
                                                       @RequestBody AssignRoleRequest req) {
