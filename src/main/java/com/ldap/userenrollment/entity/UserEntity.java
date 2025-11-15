@@ -33,6 +33,8 @@ public class UserEntity {
     @JsonManagedReference
     private List<UserRoleMapping> roles;
 
+    @Transient
+    private Map<String, Object> ldapData;
 
 
     @PrePersist
