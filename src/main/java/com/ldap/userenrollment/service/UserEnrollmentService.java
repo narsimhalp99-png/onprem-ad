@@ -2,28 +2,21 @@ package com.ldap.userenrollment.service;
 
 import com.ldap.myidcustomerservice.dto.UsersRequest;
 import com.ldap.myidcustomerservice.service.UserService;
-import com.ldap.userenrollment.dto.AssignRoleRequest;
 import com.ldap.userenrollment.entity.UserEntity;
-import com.ldap.userenrollment.entity.UserRoleMapping;
 import com.ldap.userenrollment.exception.NotFoundException;
 import com.ldap.userenrollment.repository.RoleRepository;
 import com.ldap.userenrollment.repository.UserEnrollmentRepository;
 import com.ldap.userenrollment.repository.UserRoleMappingRepository;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 @Data
 @Service
@@ -84,7 +77,6 @@ public class UserEnrollmentService {
                 }
 
                 String distinguishedName = (String) dataList.get(0).get("distinguishedName");
-
 
                 UsersRequest secondReq = new UsersRequest();
                 secondReq.setSearchBaseOU(distinguishedName);

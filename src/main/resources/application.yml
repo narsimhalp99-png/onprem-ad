@@ -14,6 +14,9 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.SQLServerDialect
 
+#server:
+#  servlet:
+#    context-path: /myidcustomapi
 
   ldap:
     search-subtree: true

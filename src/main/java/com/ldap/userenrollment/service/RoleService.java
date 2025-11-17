@@ -46,20 +46,17 @@ public class RoleService {
         UserEntity userEntity = userRepo.findById(employeeId)
                 .orElseThrow(() -> new RuntimeException("User not found: " + employeeId));
 
-        // 🔍 Check if mapping already exists
         UserRoleMapping existing = userRoleRepo.findByEmployeeIdAndAssignedRoleId(employeeId, roleId);
 
         if (existing != null) {
             // Idempotent update
             if (!Objects.equals(existing.getAssignedRoleStatus(), isActive)) {
                 existing.setAssignedRoleStatus(isActive);
-                existing.setAssignedAt(OffsetDateTime.now());
                 return userRoleRepo.save(existing);
             }
             return existing;
         }
 
-        // ➕ Create new mapping (DO NOT SET employeeId manually)
         UserRoleMapping mapping = new UserRoleMapping();
         mapping.setUser(userEntity);           // FK
         mapping.setAssignedRoleId(roleId);

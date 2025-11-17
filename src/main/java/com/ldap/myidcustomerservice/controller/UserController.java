@@ -8,13 +8,13 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/activeDirectory/users")
+@RequestMapping("/myidcustomapi/ad-management")
 public class UserController {
 
     @Autowired
     UserService service;
 
-    @PostMapping("/getUsers")
+    @PostMapping("/users")
     public Map<String, Object> getAllbjects(@RequestBody UsersRequest request) {
         return service.fetchAllObjects(request);
     }

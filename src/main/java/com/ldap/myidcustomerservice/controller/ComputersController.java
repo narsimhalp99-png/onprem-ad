@@ -12,13 +12,13 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/activeDirectory/computers")
+@RequestMapping("/myidcustomapi/ad-management")
 public class ComputersController {
 
     @Autowired
     ComputerService service;
 
-    @PostMapping("/getComputers")
+    @PostMapping("/computers")
     public Map<String, Object> getAllbjects(@RequestBody ComputersRequest request) {
         return service.fetchAllObjects(request);
     }
