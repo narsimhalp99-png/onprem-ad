@@ -40,10 +40,11 @@ public class ServerElevationService {
 
         // Step 1: Find Active AD Computer
         ComputersRequest computerReq = ComputersRequest.builder()
-                .filter("(cn=" + request.getComputerName() + ")")
+                .filter("(&(cn=" + request.getComputerName() + ")(!(userAccountControl=4130)))")
                 .searchBaseOU(defaultBase)
                 .pageNumber(0)
                 .pageSize(1)
+                .addtnlAttributes(List.of("extensionAttribute1", "userAccountControl", "operatingSystem"))
                 .build();
 
         Map<String, Object> computerResult = computerService.fetchAllObjects(computerReq);
@@ -116,7 +117,7 @@ public class ServerElevationService {
         List<Map<String, Object>> localGroups = (List<Map<String, Object>>) localGroupResult.get("data");
 
         if (localGroups == null || localGroups.isEmpty()) {
-            setError(response, "ELEVATION_GROUPNOT_FOUND");
+            setError(response, "ELEVATION_GROUP_NOT_FOUND");
             return response;
         }
 
