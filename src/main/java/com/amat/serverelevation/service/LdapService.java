@@ -29,7 +29,6 @@ public class LdapService {
     public Optional<AdComputer> findActiveComputer(String computerName) {
 
 
-
     return null;
 
 
