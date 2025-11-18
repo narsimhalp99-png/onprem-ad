@@ -29,6 +29,9 @@ public class ServerElevationService {
     @Autowired
     UserService userService;
 
+    @Autowired
+    LdapService ldapService;
+
     @Value("${spring.ldap.base:''}")
     String defaultBase;
 
@@ -37,6 +40,24 @@ public class ServerElevationService {
         ServerElevationResponse response = ServerElevationResponse.builder()
                 .computerName(request.getComputerName())
                 .build();
+
+        // Step 0: Verify Requestor Exists in AD
+        UsersRequest requestorReq = UsersRequest.builder()
+                .filter("(employeeId=" + request.getRequestorEmpId() + ")")
+                .searchBaseOU(defaultBase)
+                .pageNumber(0)
+                .pageSize(1)
+                .build();
+
+        Map<String, Object> requestorResp = userService.fetchAllObjects(requestorReq);
+        List<Map<String, Object>> requestorData = (List<Map<String, Object>>) requestorResp.get("data");
+
+        if (requestorData == null || requestorData.isEmpty()) {
+            setError(response, "USER_NOT_FOUND");
+            return response;
+        }
+
+        String requestorDn = (String) requestorData.get(0).get("distinguishedName");
 
         // Step 1: Find Active AD Computer
         ComputersRequest computerReq = ComputersRequest.builder()
@@ -134,13 +155,20 @@ public class ServerElevationService {
             GroupsRequest recursiveGroupReq = GroupsRequest.builder()
                     .searchBaseOU(defaultBase)
                     .filter("(cn=" + adminGroup + ")")
+                    .pageSize(2)
+                    .pageNumber(0)
                     .fetchRecursiveMembers(true)
                     .build();
 
             Map<String, Object> recursiveGroupResult = groupsService.fetchAllGroups(recursiveGroupReq);
-            List<String> recursiveMembers = (List<String>) recursiveGroupResult.getOrDefault("members", List.of());
 
-            boolean isMemberOfAdminGroup = recursiveMembers.contains(request.getRequestorEmpId());
+            List<Map<String, Object>> recursiveGroupResultData = (List<Map<String, Object>>) recursiveGroupResult.get("data");
+
+            List<String> recursiveMembers = (List<String>) recursiveGroupResultData.get(0).get("member");
+
+            String userAdminDn = ldapService.fetchAdminAccountDn(requestorDn);
+
+            boolean isMemberOfAdminGroup = recursiveMembers.contains(userAdminDn);
             response.setApprovalRequired(!isMemberOfAdminGroup);
         }
 

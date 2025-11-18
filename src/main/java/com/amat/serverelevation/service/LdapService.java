@@ -126,4 +126,27 @@ public class LdapService {
         }
         return false;
     }
+
+
+    public String fetchAdminAccountDn(String userDn) {
+        UsersRequest adminReq = UsersRequest.builder()
+                .searchBaseOU(defaultBase)
+                .filter("(&(manager=" + userDn + ")(employeeType=SA)(!(userAccountControl=514)))")
+                .pageNumber(0)
+                .pageSize(5)
+                .addtnlAttributes(List.of("manager", "employeeType", "userAccountControl"))
+                .build();
+
+        Map<String, Object> ldapResponse = userService.fetchAllObjects(adminReq);
+        List<Map<String, Object>> dataEntries = (List<Map<String, Object>>) ldapResponse.get("data");
+
+        if (dataEntries == null || dataEntries.isEmpty()) {
+            return "";
+        }
+
+        String adminDn = (String) dataEntries.get(0).get("distinguishedName");
+
+        return (adminDn != null && !adminDn.isBlank()) ? adminDn : "";
+    }
+
 }
