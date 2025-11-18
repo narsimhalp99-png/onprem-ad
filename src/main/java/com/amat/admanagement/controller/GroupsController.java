@@ -11,18 +11,18 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/myidcustomapi/ad-management")
+@RequestMapping("/myidcustomapi/ad-management/groups")
 public class GroupsController {
 
     @Autowired
     GroupsService service;
 
-    @PostMapping("/groups")
+    @PostMapping
     public Map<String, Object> getGroups(@RequestBody GroupsRequest groupsRequest) {
         return service.fetchAllGroups(groupsRequest);
     }
 
-    @PostMapping("/groups/manageGroup")
+    @PostMapping("/manage-members")
     public ResponseEntity<ModifyGroupResponse> modifyGroup(@RequestBody ManageGroupRequest request)  {
         return ResponseEntity.ok(service.modifyGroup(request));
     }

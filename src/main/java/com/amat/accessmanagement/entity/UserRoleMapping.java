@@ -1,4 +1,4 @@
-package com.amat.usermanagement.entity;
+package com.amat.accessmanagement.entity;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;

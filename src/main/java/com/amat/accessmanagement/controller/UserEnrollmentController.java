@@ -1,10 +1,10 @@
-package com.amat.usermanagement.controller;
+package com.amat.accessmanagement.controller;
 
-import com.amat.usermanagement.dto.AssignRoleRequest;
-import com.amat.usermanagement.entity.UserEntity;
-import com.amat.usermanagement.entity.UserRoleMapping;
-import com.amat.usermanagement.service.RoleService;
-import com.amat.usermanagement.service.UserEnrollmentService;
+import com.amat.accessmanagement.dto.AssignRoleRequest;
+import com.amat.accessmanagement.entity.UserEntity;
+import com.amat.accessmanagement.entity.UserRoleMapping;
+import com.amat.accessmanagement.service.RoleService;
+import com.amat.accessmanagement.service.UserEnrollmentService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;

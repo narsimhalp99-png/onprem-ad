@@ -1,4 +1,4 @@
-package com.amat.usermanagement.controller;
+package com.amat.accessmanagement.controller;
 
 import org.springframework.web.bind.annotation.*;
 

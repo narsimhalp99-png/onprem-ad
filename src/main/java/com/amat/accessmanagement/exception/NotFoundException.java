@@ -1,4 +1,4 @@
-package com.amat.usermanagement.exception;
+package com.amat.accessmanagement.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;

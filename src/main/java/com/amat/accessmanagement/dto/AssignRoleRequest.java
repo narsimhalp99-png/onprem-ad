@@ -1,4 +1,4 @@
-package com.amat.usermanagement.dto;
+package com.amat.accessmanagement.dto;
 
 import lombok.Data;
 

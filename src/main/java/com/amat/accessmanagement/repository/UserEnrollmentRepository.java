@@ -1,6 +1,6 @@
-package com.amat.usermanagement.repository;
+package com.amat.accessmanagement.repository;
 
-import com.amat.usermanagement.entity.UserEntity;
+import com.amat.accessmanagement.entity.UserEntity;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

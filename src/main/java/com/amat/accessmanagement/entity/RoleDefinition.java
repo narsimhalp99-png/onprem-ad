@@ -1,4 +1,4 @@
-package com.amat.usermanagement.entity;
+package com.amat.accessmanagement.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

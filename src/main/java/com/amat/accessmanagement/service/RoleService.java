@@ -1,11 +1,11 @@
-package com.amat.usermanagement.service;
+package com.amat.accessmanagement.service;
 
-import com.amat.usermanagement.dto.AssignRoleRequest;
-import com.amat.usermanagement.entity.UserEntity;
-import com.amat.usermanagement.entity.UserRoleMapping;
-import com.amat.usermanagement.repository.RoleRepository;
-import com.amat.usermanagement.repository.UserEnrollmentRepository;
-import com.amat.usermanagement.repository.UserRoleMappingRepository;
+import com.amat.accessmanagement.dto.AssignRoleRequest;
+import com.amat.accessmanagement.entity.UserEntity;
+import com.amat.accessmanagement.entity.UserRoleMapping;
+import com.amat.accessmanagement.repository.RoleRepository;
+import com.amat.accessmanagement.repository.UserEnrollmentRepository;
+import com.amat.accessmanagement.repository.UserRoleMappingRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;

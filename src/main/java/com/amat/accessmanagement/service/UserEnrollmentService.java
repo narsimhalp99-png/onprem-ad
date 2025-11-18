@@ -1,12 +1,12 @@
-package com.amat.usermanagement.service;
+package com.amat.accessmanagement.service;
 
 import com.amat.admanagement.dto.UsersRequest;
 import com.amat.admanagement.service.UserService;
-import com.amat.usermanagement.entity.UserEntity;
-import com.amat.usermanagement.exception.NotFoundException;
-import com.amat.usermanagement.repository.RoleRepository;
-import com.amat.usermanagement.repository.UserEnrollmentRepository;
-import com.amat.usermanagement.repository.UserRoleMappingRepository;
+import com.amat.accessmanagement.entity.UserEntity;
+import com.amat.accessmanagement.exception.NotFoundException;
+import com.amat.accessmanagement.repository.RoleRepository;
+import com.amat.accessmanagement.repository.UserEnrollmentRepository;
+import com.amat.accessmanagement.repository.UserRoleMappingRepository;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -72,11 +72,15 @@ public class UserEnrollmentService {
                 List<Map<String, Object>> dataList =
                         (List<Map<String, Object>>) firstResp.get("data");
 
+                String distinguishedName = (String) dataList.get(0).get("distinguishedName");
+
+                if (!dataList.isEmpty() && distinguishedName!=null){
+                    user.setRegularAccountDN(distinguishedName);
+                }
+
                 if (dataList == null || dataList.isEmpty()) {
                     throw new NotFoundException("LDAP user not found for employeeId: " + employeeId);
                 }
-
-                String distinguishedName = (String) dataList.get(0).get("distinguishedName");
 
                 UsersRequest secondReq = new UsersRequest();
                 secondReq.setSearchBaseOU(distinguishedName);
@@ -90,7 +94,19 @@ public class UserEnrollmentService {
                 Map<String, Object> finalLdapResp = ldapUserService.fetchAllObjects(secondReq);
 
 
-                user.setLdapData(finalLdapResp);
+                List<Map<String, Object>> newDataList = (List<Map<String, Object>>) finalLdapResp.get("data");
+
+                Map<String, Object> firstEntry = newDataList.get(0);
+
+
+                String adminDN = (String) firstEntry.get("distinguishedName");
+
+                if(!adminDN.isEmpty() && !adminDN.isBlank())
+                user.setAdminAccountDN(adminDN);
+
+
+
+//                user.setLdapData(finalLdapResp);
             }catch(Exception e){
                 log.info("Exception details are::{}", e);
             }

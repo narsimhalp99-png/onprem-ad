@@ -1,5 +1,7 @@
-package com.amat.usermanagement.entity;
+package com.amat.accessmanagement.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -32,8 +34,18 @@ public class UserEntity {
     @JsonManagedReference
     private List<UserRoleMapping> roles;
 
+    @JsonIgnore
     @Transient
     private Map<String, Object> ldapData;
+
+    @Transient
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private String adminAccountDN;
+
+    @Transient
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private String regularAccountDN;
+
 
 
     @PrePersist

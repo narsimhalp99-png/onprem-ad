@@ -1,6 +1,6 @@
-package com.amat.usermanagement.repository;
+package com.amat.accessmanagement.repository;
 
-import com.amat.usermanagement.entity.UserRoleMapping;
+import com.amat.accessmanagement.entity.UserRoleMapping;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
