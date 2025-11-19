@@ -12,6 +12,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -59,13 +61,22 @@ public class ServerElevationService {
 
         String requestorDn = (String) requestorData.get(0).get("distinguishedName");
 
+        String userAdminDn = ldapService.fetchAdminAccountDn(requestorDn);
+
+
+        if (userAdminDn == null || userAdminDn.isEmpty()) {
+            setError(response, "USER_ADMIN_ACCOUNT_NOT_FOUND");
+            return response;
+        }
+
+
         // Step 1: Find Active AD Computer
         ComputersRequest computerReq = ComputersRequest.builder()
                 .filter("(&(cn=" + request.getComputerName() + ")(!(userAccountControl=4130)))")
                 .searchBaseOU(defaultBase)
                 .pageNumber(0)
                 .pageSize(1)
-                .addtnlAttributes(List.of("extensionAttribute1", "userAccountControl", "operatingSystem"))
+                .addtnlAttributes(List.of("facsimileTelephoneNumber", "userAccountControl", "operatingSystem"))
                 .build();
 
         Map<String, Object> computerResult = computerService.fetchAllObjects(computerReq);
@@ -78,7 +89,7 @@ public class ServerElevationService {
 
         Map<String, Object> computer = computers.get(0);
         response.setOperatingSystem((String) computer.get("operatingSystem"));
-        response.setApplicationName("MyID-IIQ"); // Or derive if needed
+        response.setApplicationName((String) computer.get("facsimileTelephoneNumber")); // Or derive if needed
 
         // Step 2 & 3: Find Admin Group
         String adminGroup = request.getComputerName() + "-APP-ADMINS";
@@ -142,7 +153,17 @@ public class ServerElevationService {
             return response;
         }
 
-        List<String> members = (List<String>) localGroups.get(0).get("member");
+        // TODO Single item, string , multiple -> List coming
+//        List<String> members = (List<String>) localGroups.get(0).get("member");
+
+        Object memberObj = localGroups.get(0).get("member");
+
+        List<String> members =
+                memberObj instanceof List
+                        ? (List<String>) memberObj
+                        : Collections.singletonList(String.valueOf(memberObj));
+
+
         if (members != null && members.contains(request.getRequestorEmpId())) {
             setError(response, "USER_ALREADY_ELEVATED");
             return response;
@@ -164,11 +185,25 @@ public class ServerElevationService {
 
             List<Map<String, Object>> recursiveGroupResultData = (List<Map<String, Object>>) recursiveGroupResult.get("data");
 
-            List<String> recursiveMembers = (List<String>) recursiveGroupResultData.get(0).get("member");
+            // Collect all members from all results
+            List<String> allRecursiveMembers = new ArrayList<>();
 
-            String userAdminDn = ldapService.fetchAdminAccountDn(requestorDn);
+            for (Map<String, Object> groupData : recursiveGroupResultData) {
+                Object memberObj2 = groupData.get("member");
 
-            boolean isMemberOfAdminGroup = recursiveMembers.contains(userAdminDn);
+                if (memberObj2 instanceof List) {
+                    allRecursiveMembers.addAll((List<String>) memberObj2);
+
+                } else if (memberObj2 instanceof String) {
+                    allRecursiveMembers.add((String) memberObj2);
+
+                } else if (memberObj2 != null) {
+                    allRecursiveMembers.add(memberObj2.toString());
+                }
+            }
+
+
+            boolean isMemberOfAdminGroup = allRecursiveMembers.contains(userAdminDn);
             response.setApprovalRequired(!isMemberOfAdminGroup);
         }
 
@@ -178,5 +213,11 @@ public class ServerElevationService {
     private void setError(ServerElevationResponse response, String errorMsg) {
         response.setEligibleForElevation(false);
         response.setEligibleForElevationMsg(errorMsg);
+    }
+
+
+    public SubmitElevationResponse submitElevationRequest(SubmitElevationRequest request) {
+
+        return null;
     }
 }

@@ -11,5 +11,5 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class AdGroup {
     private String name;
-    private String managedBy; // Distinguished Name (DN)
+    private String managedBy;
 }

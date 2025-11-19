@@ -34,8 +34,8 @@ public class UserEnrollmentController {
         return ResponseEntity.ok(svc.getUsers(pageable));
     }
 
-    @GetMapping("/{employeeId}/{additionalDetails}")
-    public ResponseEntity<UserEntity> getUser(@PathVariable Long employeeId,@PathVariable boolean additionalDetails) {
+    @GetMapping("/{employeeId}")
+    public ResponseEntity<UserEntity> getUser(@PathVariable Long employeeId, @RequestParam(name = "additionalDetails", defaultValue = "false") boolean additionalDetails) {
         return ResponseEntity.ok(svc.getUser(employeeId,additionalDetails));
     }
 
