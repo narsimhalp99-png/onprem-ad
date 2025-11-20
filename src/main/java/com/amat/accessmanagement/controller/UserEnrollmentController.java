@@ -9,8 +9,11 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/myidcustomapi/access-management/users")
@@ -24,10 +27,22 @@ public class UserEnrollmentController {
     RoleService roleSvc;
 
     @PostMapping
-    public ResponseEntity<UserEntity> createUser(@Valid @RequestBody UserEntity user) {
-        UserEntity created = svc.createUser(user);
-        return ResponseEntity.ok(created);
+    public ResponseEntity<?> createUser(@Valid @RequestBody UserEntity user) {
+        try {
+            svc.createUser(user);
+            return ResponseEntity
+                    .status(HttpStatus.CREATED)
+                    .body(Map.of("message", "User created successfully"));
+        } catch (Exception ex) {
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of(
+                            "message", "Failed to create user",
+                            "error", ex.getMessage()
+                    ));
+        }
     }
+
 
     @GetMapping
     public ResponseEntity<Page<UserEntity>> getUsers(Pageable pageable) {
@@ -45,11 +60,33 @@ public class UserEnrollmentController {
         return ResponseEntity.ok(svc.updateUser(employeeId, user));
     }
 
+    @PatchMapping("/{employeeId}")
+    public ResponseEntity<?> updateUserInfo(
+            @PathVariable Long employeeId,
+            @RequestBody UserEntity user) {
+
+        try {
+            svc.updateUserDetails(employeeId, user);
+            return ResponseEntity.ok(
+                    Map.of("message", "User updated successfully")
+            );
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of(
+                            "message", "Failed to update user",
+                            "error", ex.getMessage()
+                    ));
+        }
+    }
+
+
+
     @DeleteMapping("/{employeeId}")
     public ResponseEntity<Void> deleteUser(@PathVariable Long employeeId) {
         svc.deleteUser(employeeId);
         return ResponseEntity.noContent().build();
     }
+
 
     @PostMapping("/assign-role/{employeeId}")
     public ResponseEntity<UserRoleMapping> assignRole(@PathVariable Long employeeId,
@@ -58,7 +95,7 @@ public class UserEnrollmentController {
         return ResponseEntity.ok(mapping);
     }
 
-    @PatchMapping("/revoke-role/{employeeId}")
+    @PatchMapping("/remove-role/{employeeId}")
     public ResponseEntity<Void> revokeRole(@PathVariable Long employeeId, @RequestBody AssignRoleRequest req) {
         roleSvc.revokeRole(employeeId, req.getRoleId());
         return ResponseEntity.noContent().build();

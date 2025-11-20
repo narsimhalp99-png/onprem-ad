@@ -135,6 +135,36 @@ public class UserEnrollmentService {
         userRepo.delete(existing);
     }
 
+    public void updateUserDetails(Long employeeId, UserEntity update) {
+
+        UserEntity existing = getUser(employeeId, false);
+
+        if (update.getDisplayName() != null)
+            existing.setDisplayName(update.getDisplayName());
+
+        if (update.getFirstName() != null)
+            existing.setFirstName(update.getFirstName());
+
+        if (update.getLastName() != null)
+            existing.setLastName(update.getLastName());
+
+        if (update.getOrganization() != null)
+            existing.setOrganization(update.getOrganization());
+
+        if (update.getSubOrganization() != null)
+            existing.setSubOrganization(update.getSubOrganization());
+
+        if (update.getTitle() != null)
+            existing.setTitle(update.getTitle());
+
+        if (update.getManagerEmpId() != null)
+            existing.setManagerEmpId(update.getManagerEmpId());
+
+        if (update.getIsActive() != null)
+            existing.setIsActive(update.getIsActive());
+
+        userRepo.save(existing);
+    }
 
 
 }
