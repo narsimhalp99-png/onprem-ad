@@ -1,6 +1,9 @@
 package com.amat.serverelevation.service;
 
 
+import com.amat.accessmanagement.entity.UserEntity;
+import com.amat.accessmanagement.exception.NotFoundException;
+import com.amat.accessmanagement.repository.UserEnrollmentRepository;
 import com.amat.admanagement.dto.ComputersRequest;
 import com.amat.admanagement.dto.GroupsRequest;
 import com.amat.admanagement.dto.UsersRequest;
@@ -8,6 +11,7 @@ import com.amat.admanagement.service.ComputerService;
 import com.amat.admanagement.service.GroupsService;
 import com.amat.admanagement.service.UserService;
 import com.amat.serverelevation.DTO.*;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -18,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 
 
+@Slf4j
 @Service
 public class ServerElevationService {
 
@@ -33,6 +38,10 @@ public class ServerElevationService {
 
     @Autowired
     LdapService ldapService;
+
+
+    @Autowired
+    UserEnrollmentRepository userRepo;
 
     @Value("${spring.ldap.base:''}")
     String defaultBase;
@@ -213,6 +222,65 @@ public class ServerElevationService {
     private void setError(ServerElevationResponse response, String errorMsg) {
         response.setEligibleForElevation(false);
         response.setEligibleForElevationMsg(errorMsg);
+    }
+
+    public Map<String, Object> fetchAdminAccountDetails(Long employeeId) {
+
+        Map<String, Object> adminDetails = null;
+        // Fetch user from DB
+        UserEntity user = userRepo.findById(employeeId)
+                .orElseThrow(() -> new NotFoundException("User not found: " + employeeId));
+
+
+            try {
+                UsersRequest firstReq = new UsersRequest();
+                firstReq.setSearchBaseOU(defaultBase);
+                firstReq.setFilter("employeeId=" + employeeId);
+                firstReq.setPageNumber(0);
+                firstReq.setPageSize(5);
+                firstReq.setAddtnlAttributes(
+                        List.of("manager", "employeeType", "userAccountControl")
+                );
+
+                Map<String, Object> firstResp = userService.fetchAllObjects(firstReq);
+
+                // Extract "distinguishedName" from first response
+                List<Map<String, Object>> dataList =
+                        (List<Map<String, Object>>) firstResp.get("data");
+
+                String distinguishedName = (String) dataList.get(0).get("distinguishedName");
+
+                if (!dataList.isEmpty() && distinguishedName!=null){
+                    user.setRegularAccountDN(distinguishedName);
+                }
+
+                if (dataList == null || dataList.isEmpty()) {
+                    throw new NotFoundException("LDAP user not found for employeeId: " + employeeId);
+                }
+
+                UsersRequest secondReq = new UsersRequest();
+                secondReq.setSearchBaseOU(distinguishedName);
+                secondReq.setFilter("(&(manager=" + distinguishedName + ")(employeeType=SA)(!(userAccountControl=514)))");
+                secondReq.setPageNumber(0);
+                secondReq.setPageSize(5);
+                secondReq.setAddtnlAttributes(
+                        List.of("manager", "employeeType", "userAccountControl")
+                );
+
+                Map<String, Object> finalLdapResp = userService.fetchAllObjects(secondReq);
+
+
+                List<Map<String, Object>> newDataList = (List<Map<String, Object>>) finalLdapResp.get("data");
+
+                adminDetails = newDataList.get(0);
+
+
+            }catch(Exception e){
+                log.info("fetchAdminAccountDetails ::Exception details are::{}", e);
+            }
+
+
+        return adminDetails;
     }
 
 

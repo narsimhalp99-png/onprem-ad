@@ -1,6 +1,7 @@
 package com.amat.accessmanagement.service;
 
 import com.amat.accessmanagement.dto.AssignRoleRequest;
+import com.amat.accessmanagement.entity.RoleDefinition;
 import com.amat.accessmanagement.entity.UserEntity;
 import com.amat.accessmanagement.entity.UserRoleMapping;
 import com.amat.accessmanagement.repository.RoleRepository;
@@ -11,6 +12,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Objects;
 
 @Service
@@ -82,7 +84,9 @@ public class RoleService {
         userRoleRepo.save(existing);
     }
 
-
+    public List<RoleDefinition> getAllRoles() {
+        return roleRepo.findAll();
+    }
 
 
 }

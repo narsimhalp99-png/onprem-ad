@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/myidcustomapi/access-management/users")
+@RequestMapping("/access-management/users")
 public class UserEnrollmentController {
 
     @Autowired

@@ -6,7 +6,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/myidcustomapi/ad-management")
+@RequestMapping("/ad-management")
 public class PrivilegedUsersController {
 
     @Autowired

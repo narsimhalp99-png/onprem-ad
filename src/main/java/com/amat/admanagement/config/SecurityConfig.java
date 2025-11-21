@@ -36,7 +36,7 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/myidcustomapi/**").permitAll()
+                        .requestMatchers("/server-elevation/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .httpBasic();

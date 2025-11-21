@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/myidcustomapi/ad-management/computers")
+@RequestMapping("/ad-management/computers")
 public class ComputersController {
 
     @Autowired

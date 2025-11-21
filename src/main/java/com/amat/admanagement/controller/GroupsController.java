@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/myidcustomapi/ad-management/groups")
+@RequestMapping("/ad-management/groups")
 public class GroupsController {
 
     @Autowired
