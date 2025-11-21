@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class ServerElevationRequest {
-    private String computerName;
+    private String serverName;
     private String requestorEmpId;
 }
 

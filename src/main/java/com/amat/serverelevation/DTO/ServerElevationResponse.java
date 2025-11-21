@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class ServerElevationResponse {
-    private String computerName;
+    private String serverName;
     private String operatingSystem;
     private String applicationName;
     private OwnerDetails ownerDetails;

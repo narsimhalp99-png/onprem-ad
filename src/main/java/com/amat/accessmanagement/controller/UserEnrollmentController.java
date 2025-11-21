@@ -50,9 +50,29 @@ public class UserEnrollmentController {
     }
 
     @GetMapping("/{employeeId}")
-    public ResponseEntity<UserEntity> getUser(@PathVariable Long employeeId, @RequestParam(name = "additionalDetails", defaultValue = "false") boolean additionalDetails) {
-        return ResponseEntity.ok(svc.getUser(employeeId,additionalDetails));
+    public ResponseEntity<Object> getUser(
+            @PathVariable Long employeeId,
+            @RequestParam(name = "additionalDetails", defaultValue = "false") boolean additionalDetails) {
+
+        UserEntity user = svc.getUser(employeeId, additionalDetails);
+
+        if (user == null) {
+            return ResponseEntity.status(404).body(
+                    Map.of(
+                            "status", "failed",
+                            "message", "User not found: " + employeeId
+                    )
+            );
+        }
+
+        return ResponseEntity.ok(
+                Map.of(
+                        "status", "success",
+                        "data", user
+                )
+        );
     }
+
 
     @PutMapping("/{employeeId}")
     public ResponseEntity<UserEntity> updateUser(@PathVariable Long employeeId,

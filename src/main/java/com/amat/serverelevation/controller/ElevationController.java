@@ -1,13 +1,13 @@
 package com.amat.serverelevation.controller;
 
 
-import com.amat.admanagement.dto.UsersRequest;
 import com.amat.admanagement.service.UserService;
 import com.amat.serverelevation.DTO.ServerElevationRequest;
 import com.amat.serverelevation.DTO.ServerElevationResponse;
 import com.amat.serverelevation.DTO.SubmitElevationRequest;
 import com.amat.serverelevation.DTO.SubmitElevationResponse;
 import com.amat.serverelevation.service.ServerElevationService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -21,19 +21,30 @@ public class ElevationController {
     @Autowired
     ServerElevationService serverElevationService;
 
-    @Autowired
-    UserService service;
+    @GetMapping("/fetchServerDetails")
+    public ResponseEntity<ServerElevationResponse> validateServerElevation( @RequestParam(name = "serverName", defaultValue = "") String serverName, HttpServletRequest servletRequest) {
 
-    @PostMapping("/validateRequest")
-    public ResponseEntity<ServerElevationResponse> validateServerElevation(
-            @RequestParam(name = "additionalDetails", defaultValue = "false") boolean additionalDetails,
-            @RequestBody ServerElevationRequest request) {
+        String employeeId = servletRequest.getHeader("employeeId");
+        ServerElevationRequest request = new ServerElevationRequest();
+        request.setServerName(serverName);
+        request.setRequestorEmpId(employeeId);
 
-        ServerElevationResponse response = serverElevationService.validateRequest(request, additionalDetails);
+        ServerElevationResponse response = new ServerElevationResponse();
+
+        if (serverName==null ||  serverName.isBlank()) {
+            response.setEligibleForElevation(false);
+                    response.setEligibleForElevationMsg("Server Name Cannot be blank or null");
+        }else if (employeeId==null ||  employeeId.isBlank()) {
+            response.setEligibleForElevation(false);
+            response.setEligibleForElevationMsg("EmployeeId Cannot be blank or null");
+        }else{
+            response = serverElevationService.validateRequest(request);
+        }
+
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping("/submitElevationRequest")
+    @PostMapping("/submitRequest")
     public ResponseEntity<SubmitElevationResponse> submitElevationRequest(
             @RequestBody SubmitElevationRequest request) {
 
@@ -41,11 +52,6 @@ public class ElevationController {
         return ResponseEntity.ok(response);
     }
 
-
-    @GetMapping("/admin-account/{employeeId}")
-    public Map<String, Object> getAdminAccountDetails(@PathVariable Long employeeId) {
-        return serverElevationService.fetchAdminAccountDetails(employeeId);
-    }
 
 
 

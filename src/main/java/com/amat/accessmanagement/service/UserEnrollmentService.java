@@ -13,10 +13,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Data
 @Service
@@ -50,9 +52,11 @@ public class UserEnrollmentService {
 
     public UserEntity getUser(Long employeeId, boolean additionalDetails) {
 
-        // Fetch user from DB
-        UserEntity user = userRepo.findById(employeeId)
-                .orElseThrow(() -> new NotFoundException("User not found: " + employeeId));
+        UserEntity user = userRepo.findById(employeeId).orElse(null);
+
+        if(user==null){
+            return null;
+        }
 
         if (additionalDetails) {
 

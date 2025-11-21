@@ -37,9 +37,9 @@ public class LdapService {
     String defaultBase;
 
     // Fetch an Active Directory Computer object by CN
-    public Optional<AdComputer> findActiveComputer(String computerName) {
+    public Optional<AdComputer> findActiveComputer(String serverName) {
         ComputersRequest req = ComputersRequest.builder()
-                .filter("(cn=" + computerName + ")")
+                .filter("(cn=" + serverName + ")")
                 .searchBaseOU(defaultBase)
                 .pageNumber(0)
                 .pageSize(1)
@@ -51,7 +51,7 @@ public class LdapService {
         if (computers != null && !computers.isEmpty()) {
             Map<String, Object> comp = computers.get(0);
             return Optional.of(AdComputer.builder()
-                    .name(computerName)
+                    .name(serverName)
                     .operatingSystem((String) comp.get("operatingSystem"))
                     .build());
         }

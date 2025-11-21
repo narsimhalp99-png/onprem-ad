@@ -39,17 +39,13 @@ public class ServerElevationService {
     @Autowired
     LdapService ldapService;
 
-
-    @Autowired
-    UserEnrollmentRepository userRepo;
-
     @Value("${spring.ldap.base:''}")
     String defaultBase;
 
 
-    public ServerElevationResponse validateRequest(ServerElevationRequest request, boolean additionalDetails) {
+    public ServerElevationResponse validateRequest(ServerElevationRequest request) {
         ServerElevationResponse response = ServerElevationResponse.builder()
-                .computerName(request.getComputerName())
+                .serverName(request.getServerName())
                 .build();
 
         // Step 0: Verify Requestor Exists in AD
@@ -81,7 +77,7 @@ public class ServerElevationService {
 
         // Step 1: Find Active AD Computer
         ComputersRequest computerReq = ComputersRequest.builder()
-                .filter("(&(cn=" + request.getComputerName() + ")(!(userAccountControl=4130)))")
+                .filter("(&(cn=" + request.getServerName() + ")(!(userAccountControl=4130)))")
                 .searchBaseOU(defaultBase)
                 .pageNumber(0)
                 .pageSize(1)
@@ -101,7 +97,7 @@ public class ServerElevationService {
         response.setApplicationName((String) computer.get("facsimileTelephoneNumber")); // Or derive if needed
 
         // Step 2 & 3: Find Admin Group
-        String adminGroup = request.getComputerName() + "-APP-ADMINS";
+        String adminGroup = request.getServerName() + "-APP-ADMINS";
         GroupsRequest groupReq = GroupsRequest.builder()
                 .searchBaseOU(defaultBase)
                 .filter("(cn=" + adminGroup + ")")
@@ -145,7 +141,7 @@ public class ServerElevationService {
                 .build());
 
         // Step 5: Check Local Admin Membership
-        String localAdminGroup = request.getComputerName() + "-Local-Admins";
+        String localAdminGroup = request.getServerName() + "-Local-Admins";
         GroupsRequest localGroupReq = GroupsRequest.builder()
                 .searchBaseOU(defaultBase)
                 .filter("(cn=" + localAdminGroup + ")")
@@ -181,7 +177,6 @@ public class ServerElevationService {
         response.setEligibleForElevation(true);
 
         // Step 6: Need Approval?
-        if (additionalDetails) {
             GroupsRequest recursiveGroupReq = GroupsRequest.builder()
                     .searchBaseOU(defaultBase)
                     .filter("(cn=" + adminGroup + ")")
@@ -214,7 +209,6 @@ public class ServerElevationService {
 
             boolean isMemberOfAdminGroup = allRecursiveMembers.contains(userAdminDn);
             response.setApprovalRequired(!isMemberOfAdminGroup);
-        }
 
         return response;
     }
@@ -223,66 +217,6 @@ public class ServerElevationService {
         response.setEligibleForElevation(false);
         response.setEligibleForElevationMsg(errorMsg);
     }
-
-    public Map<String, Object> fetchAdminAccountDetails(Long employeeId) {
-
-        Map<String, Object> adminDetails = null;
-        // Fetch user from DB
-        UserEntity user = userRepo.findById(employeeId)
-                .orElseThrow(() -> new NotFoundException("User not found: " + employeeId));
-
-
-            try {
-                UsersRequest firstReq = new UsersRequest();
-                firstReq.setSearchBaseOU(defaultBase);
-                firstReq.setFilter("employeeId=" + employeeId);
-                firstReq.setPageNumber(0);
-                firstReq.setPageSize(5);
-                firstReq.setAddtnlAttributes(
-                        List.of("manager", "employeeType", "userAccountControl")
-                );
-
-                Map<String, Object> firstResp = userService.fetchAllObjects(firstReq);
-
-                // Extract "distinguishedName" from first response
-                List<Map<String, Object>> dataList =
-                        (List<Map<String, Object>>) firstResp.get("data");
-
-                String distinguishedName = (String) dataList.get(0).get("distinguishedName");
-
-                if (!dataList.isEmpty() && distinguishedName!=null){
-                    user.setRegularAccountDN(distinguishedName);
-                }
-
-                if (dataList == null || dataList.isEmpty()) {
-                    throw new NotFoundException("LDAP user not found for employeeId: " + employeeId);
-                }
-
-                UsersRequest secondReq = new UsersRequest();
-                secondReq.setSearchBaseOU(distinguishedName);
-                secondReq.setFilter("(&(manager=" + distinguishedName + ")(employeeType=SA)(!(userAccountControl=514)))");
-                secondReq.setPageNumber(0);
-                secondReq.setPageSize(5);
-                secondReq.setAddtnlAttributes(
-                        List.of("manager", "employeeType", "userAccountControl")
-                );
-
-                Map<String, Object> finalLdapResp = userService.fetchAllObjects(secondReq);
-
-
-                List<Map<String, Object>> newDataList = (List<Map<String, Object>>) finalLdapResp.get("data");
-
-                adminDetails = newDataList.get(0);
-
-
-            }catch(Exception e){
-                log.info("fetchAdminAccountDetails ::Exception details are::{}", e);
-            }
-
-
-        return adminDetails;
-    }
-
 
     public SubmitElevationResponse submitElevationRequest(SubmitElevationRequest request) {
 

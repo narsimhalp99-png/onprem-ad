@@ -37,6 +37,9 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/server-elevation/**").permitAll()
+                        .requestMatchers("/access-management/**").permitAll()
+                        .requestMatchers("/ad-management/**").permitAll()
+                        .requestMatchers("/common-utils/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .httpBasic();
