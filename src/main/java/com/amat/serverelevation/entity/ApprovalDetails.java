@@ -1,16 +1,16 @@
 package com.amat.serverelevation.entity;
 
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.Generated;
+import org.hibernate.annotations.GenerationTime;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "approval_details")
@@ -20,11 +20,19 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class ApprovalDetails {
 
-    @Id
-    @Column(insertable = false, updatable = false)
-    private String approvalId;
 
-    @Column(insertable = false, updatable = false)
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    @Column(columnDefinition = "uniqueidentifier")
+    private UUID approvalId;
+
+    @Generated(GenerationTime.INSERT)
+    @Column(
+            nullable = false,
+            updatable = false,
+            insertable = false,
+            columnDefinition = "DATETIME DEFAULT GETDATE()"
+    )
     private LocalDateTime approvalRequestDate;
 
     @Column(nullable = false)

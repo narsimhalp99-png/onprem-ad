@@ -3,8 +3,12 @@ package com.amat.serverelevation.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.Data;
+import org.hibernate.annotations.GenerationTime;
+
+import org.hibernate.annotations.Generated;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 
 @Entity
@@ -19,8 +23,7 @@ public class ServerElevationRequest {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    // DB generates the RequestID via DEFAULT NEWID(); JPA should not try to insert value
-    @Column(insertable = false, updatable = false)
+    @Column(nullable = false,length = 100)
     private String requestId;
 
     @Column(nullable = false)
@@ -35,7 +38,14 @@ public class ServerElevationRequest {
     @Column(columnDefinition = "nvarchar(max)")
     private String requestorComment;
 
-    @Column(insertable = false, updatable = false)
+    @Generated(GenerationTime.INSERT)
+    @Column(
+            name = "requestDate",
+            nullable = false,
+            updatable = false,
+            insertable = false,
+            columnDefinition = "DATETIME DEFAULT GETDATE()"
+    )
     private LocalDateTime requestDate;
 
     private LocalDateTime elevationTime;

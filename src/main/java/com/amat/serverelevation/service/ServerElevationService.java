@@ -18,11 +18,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 @Slf4j
 @Service
@@ -248,31 +244,21 @@ public class ServerElevationService {
                 results.add(new SubmitResponse(server, "Failed", null, null, validation.getEligibleForElevationMsg()));
                 continue;
             }
-
+            UUID guid = UUID.randomUUID();
             // Insert server_elevation_requests row (DB will generate RequestID)
             ServerElevationRequest entity = ServerElevationRequest.builder()
                     .requestedBy(employeeId)
                     .serverName(server)
+                    .requestId(guid.toString())
                     .durationInHours(entry.getDurationInHours())
                     .requestorComment(request.getComment())
                     .status("In-Progress")
                     .build();
 
-            serverRepo.save(entity);
-            // After save, JPA should refresh entity.requestId if DB default is applied and JPA supports reading it.
-            // If not automatically refreshed, you may need to re-fetch by ID or use a DB trigger/stored proc to return the generated RequestID.
-            // For simplicity we reload from DB using the generated pk id:
-            serverRepo.flush(); // ensure persisted
+            ServerElevationRequest savedServerEntity =  serverRepo.save(entity);
 
-            // fetch the requestId from DB by reloading entity (JPA should have populated requestId if DB returned)
-            String requestId = entity.getRequestId(); // may be null depending on DB/JPA config
+            String requestId = savedServerEntity.getRequestId();
 
-            // If requestId is null, try lookup by id
-            if (requestId == null) {
-                // reload
-                Optional<ServerElevationRequest> reloaded = serverRepo.findById(entity.getId());
-                requestId = reloaded.map(ServerElevationRequest::getRequestId).orElse(null);
-            }
 
             if (!Boolean.TRUE.equals(validation.getApprovalRequired())) {
                 // No approval: try immediate elevation
@@ -356,10 +342,10 @@ public class ServerElevationService {
                 approvalRepo.save(approval);
                 approvalRepo.flush();
 
-                String approvalId = approval.getApprovalId();
+                String approvalId = String.valueOf(approval.getApprovalId());
                 if (approvalId == null) {
                     // reload from DB if needed (left for implementer)
-                    approvalId = approval.getApprovalId();
+                    approvalId = String.valueOf(approval.getApprovalId());
                 }
 
                 serverRepo.updateStatusAndApprover(requestId, "Pending-Approval", approvalId);
