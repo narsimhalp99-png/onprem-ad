@@ -28,7 +28,7 @@ public class RoleService {
     UserRoleMappingRepository userRoleRepo;
 
     @Transactional
-    public UserRoleMapping assignRole(Long employeeId, AssignRoleRequest req) {
+    public UserRoleMapping assignRole(String employeeId, AssignRoleRequest req) {
         if (employeeId == null)
             throw new IllegalArgumentException("EmployeeId must not be null");
 
@@ -72,7 +72,7 @@ public class RoleService {
 
 
     @Transactional
-    public void revokeRole(Long employeeId, String roleId) {
+    public void revokeRole(String employeeId, String roleId) {
         UserRoleMapping existing =
                 userRoleRepo.findByEmployeeIdAndAssignedRoleId(employeeId, roleId);
 

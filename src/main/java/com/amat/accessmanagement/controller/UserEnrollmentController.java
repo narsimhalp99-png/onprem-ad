@@ -51,7 +51,7 @@ public class UserEnrollmentController {
 
     @GetMapping("/{employeeId}")
     public ResponseEntity<Object> getUser(
-            @PathVariable Long employeeId,
+            @PathVariable String employeeId,
             @RequestParam(name = "additionalDetails", defaultValue = "false") boolean additionalDetails) {
 
         UserEntity user = svc.getUser(employeeId, additionalDetails);
@@ -75,14 +75,14 @@ public class UserEnrollmentController {
 
 
     @PutMapping("/{employeeId}")
-    public ResponseEntity<UserEntity> updateUser(@PathVariable Long employeeId,
+    public ResponseEntity<UserEntity> updateUser(@PathVariable String employeeId,
                                                  @RequestBody UserEntity user) {
         return ResponseEntity.ok(svc.updateUser(employeeId, user));
     }
 
     @PatchMapping("/{employeeId}")
     public ResponseEntity<?> updateUserInfo(
-            @PathVariable Long employeeId,
+            @PathVariable String employeeId,
             @RequestBody UserEntity user) {
 
         try {
@@ -102,21 +102,21 @@ public class UserEnrollmentController {
 
 
     @DeleteMapping("/{employeeId}")
-    public ResponseEntity<Void> deleteUser(@PathVariable Long employeeId) {
+    public ResponseEntity<Void> deleteUser(@PathVariable String employeeId) {
         svc.deleteUser(employeeId);
         return ResponseEntity.noContent().build();
     }
 
 
     @PostMapping("/assign-role/{employeeId}")
-    public ResponseEntity<UserRoleMapping> assignRole(@PathVariable Long employeeId,
+    public ResponseEntity<UserRoleMapping> assignRole(@PathVariable String employeeId,
                                                       @RequestBody AssignRoleRequest req) {
         UserRoleMapping mapping = roleSvc.assignRole(employeeId, req);
         return ResponseEntity.ok(mapping);
     }
 
     @PatchMapping("/remove-role/{employeeId}")
-    public ResponseEntity<Void> revokeRole(@PathVariable Long employeeId, @RequestBody AssignRoleRequest req) {
+    public ResponseEntity<Void> revokeRole(@PathVariable String employeeId, @RequestBody AssignRoleRequest req) {
         roleSvc.revokeRole(employeeId, req.getRoleId());
         return ResponseEntity.noContent().build();
     }

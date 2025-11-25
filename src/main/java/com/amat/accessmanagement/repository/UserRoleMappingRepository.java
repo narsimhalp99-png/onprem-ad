@@ -10,9 +10,9 @@ import java.util.List;
 public interface UserRoleMappingRepository extends JpaRepository<UserRoleMapping, String> {
 
 
-    UserRoleMapping findByEmployeeIdAndAssignedRoleId(Long employeeId, String assignedRoleId);
+    UserRoleMapping findByEmployeeIdAndAssignedRoleId(String employeeId, String assignedRoleId);
 
-    List<UserRoleMapping> findByEmployeeId(Long employeeId);
+    List<UserRoleMapping> findByEmployeeId(String employeeId);
 
-    void deleteByEmployeeIdAndAssignedRoleId(Long employeeId, String assignedRoleId);
+    void deleteByEmployeeIdAndAssignedRoleId(String employeeId, String assignedRoleId);
 }

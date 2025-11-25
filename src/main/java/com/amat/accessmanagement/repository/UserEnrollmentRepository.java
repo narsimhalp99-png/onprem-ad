@@ -11,12 +11,12 @@ import java.util.Optional;
 
 
 @Repository
-public interface UserEnrollmentRepository extends JpaRepository<UserEntity, Long> {
+public interface UserEnrollmentRepository extends JpaRepository<UserEntity, String> {
 
     @EntityGraph(attributePaths = "roles")
     Page<UserEntity> findAll(Pageable pageable);
 
     @EntityGraph(attributePaths = "roles")
-    Optional<UserEntity> findByEmployeeId(Long id);
+    Optional<UserEntity> findByEmployeeId(String id);
 
 }

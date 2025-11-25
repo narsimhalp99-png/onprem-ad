@@ -1,26 +1,28 @@
 package com.amat.serverelevation.service;
 
 
-import com.amat.accessmanagement.entity.UserEntity;
-import com.amat.accessmanagement.exception.NotFoundException;
-import com.amat.accessmanagement.repository.UserEnrollmentRepository;
-import com.amat.admanagement.dto.ComputersRequest;
-import com.amat.admanagement.dto.GroupsRequest;
-import com.amat.admanagement.dto.UsersRequest;
+import com.amat.admanagement.dto.*;
 import com.amat.admanagement.service.ComputerService;
 import com.amat.admanagement.service.GroupsService;
 import com.amat.admanagement.service.UserService;
 import com.amat.serverelevation.DTO.*;
+import com.amat.serverelevation.entity.ApprovalDetails;
+import com.amat.serverelevation.entity.ServerElevationRequest;
+import com.amat.serverelevation.repository.ApprovalDetailsRepository;
+import com.amat.serverelevation.repository.ServerElevationRepository;
+import com.amat.serverelevation.util.ServerElevationUtils;
+import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -39,11 +41,20 @@ public class ServerElevationService {
     @Autowired
     LdapService ldapService;
 
+    @Autowired
+    ServerElevationRepository serverRepo;
+
+    @Autowired
+    ApprovalDetailsRepository approvalRepo;
+
+    @Autowired
+    ServerElevationUtils utils;
+
     @Value("${spring.ldap.base:''}")
     String defaultBase;
 
 
-    public ServerElevationResponse validateRequest(ServerElevationRequest request) {
+    public ServerElevationResponse validateRequest(com.amat.serverelevation.DTO.ServerElevationRequest request) {
         ServerElevationResponse response = ServerElevationResponse.builder()
                 .serverName(request.getServerName())
                 .build();
@@ -218,8 +229,144 @@ public class ServerElevationService {
         response.setEligibleForElevationMsg(errorMsg);
     }
 
-    public SubmitElevationResponse submitElevationRequest(SubmitElevationRequest request) {
 
-        return null;
+    @Transactional
+    public List<SubmitResponse> submitElevationRequest(String employeeId, SubmitElevationRequest request) {
+        List<SubmitResponse> results = new ArrayList<>();
+
+        for (SubmitServerEntry entry : request.getEligibleServers()) {
+            String server = entry.getServerName();
+            com.amat.serverelevation.DTO.ServerElevationRequest validateReq = com.amat.serverelevation.DTO.ServerElevationRequest.builder()
+                    .serverName(server)
+                    .requestorEmpId(employeeId)
+                    .build();
+
+            // Validate eligibility (additionalDetails = true to get approvalRequired)
+            ServerElevationResponse validation = validateRequest(validateReq);
+
+            if (!Boolean.TRUE.equals(validation.getEligibleForElevation())) {
+                results.add(new SubmitResponse(server, "Failed", null, null, validation.getEligibleForElevationMsg()));
+                continue;
+            }
+
+            // Insert server_elevation_requests row (DB will generate RequestID)
+            ServerElevationRequest entity = ServerElevationRequest.builder()
+                    .requestedBy(employeeId)
+                    .serverName(server)
+                    .durationInHours(entry.getDurationInHours())
+                    .requestorComment(request.getComment())
+                    .status("In-Progress")
+                    .build();
+
+            serverRepo.save(entity);
+            // After save, JPA should refresh entity.requestId if DB default is applied and JPA supports reading it.
+            // If not automatically refreshed, you may need to re-fetch by ID or use a DB trigger/stored proc to return the generated RequestID.
+            // For simplicity we reload from DB using the generated pk id:
+            serverRepo.flush(); // ensure persisted
+
+            // fetch the requestId from DB by reloading entity (JPA should have populated requestId if DB returned)
+            String requestId = entity.getRequestId(); // may be null depending on DB/JPA config
+
+            // If requestId is null, try lookup by id
+            if (requestId == null) {
+                // reload
+                Optional<ServerElevationRequest> reloaded = serverRepo.findById(entity.getId());
+                requestId = reloaded.map(ServerElevationRequest::getRequestId).orElse(null);
+            }
+
+            if (!Boolean.TRUE.equals(validation.getApprovalRequired())) {
+                // No approval: try immediate elevation
+                boolean elevationSuccess = false;
+                String elevationErr = null;
+
+                try {
+
+                    // fetch userDN
+
+                    String userDn = utils.fetchUserDn(employeeId);
+
+                    if (userDn == null || userDn.isEmpty() || userDn.equals("-1")) {
+                        return null;
+                    }
+
+
+                    String userAdminDn = ldapService.fetchAdminAccountDn(userDn);
+
+
+                    if (userAdminDn == null || userAdminDn.isEmpty()) {
+                        elevationErr = "Admin account not found for requestor";
+                        elevationSuccess = false;
+                    } else {
+
+                        if (userAdminDn.isBlank()) {
+                            elevationErr = "Admin DN value empty for requestor";
+                            elevationSuccess = false;
+                        } else {
+                            // 2. Build the group DN for server-local-admins
+                            String groupDn = utils.fetchGroupDn(server+ "-LOCAL-ADMINS");
+
+                            // 3. Construct ManageGroupRequest
+                            ManageGroupRequest manageReq = new ManageGroupRequest();
+                            manageReq.setGroupDn(groupDn);
+                            manageReq.setUserDns(List.of(userAdminDn));
+                            manageReq.setOperation("ADD");   // ADD / REMOVE
+
+                            // 4. Call groupService
+                            ModifyGroupResponse modifyResp = groupsService.modifyGroup(manageReq);
+
+                            if ("200".equals(modifyResp.getStatusCode()) || "success".equalsIgnoreCase(modifyResp.getStatusCode())) {
+                                elevationSuccess = true;
+                            } else {
+                                elevationSuccess = false;
+                                elevationErr = String.join(", ", modifyResp.getErrors());
+                            }
+                        }
+                    }
+
+                } catch (Exception ex) {
+                    log.error("Elevation failed for server {}: {}", server, ex.getMessage(), ex);
+                    elevationSuccess = false;
+                    elevationErr = ex.getMessage();
+                }
+
+
+                if (elevationSuccess) {
+                    // Update DB row: elevation success
+                    serverRepo.updateOnSuccess(
+                            requestId,
+                            LocalDateTime.now(),
+                            "Success",
+                            "Elevated Successfully",
+                            "Completed");
+                    results.add(new SubmitResponse(server, "Success", requestId, null, "Elevated Successfully"));
+                } else {
+                    serverRepo.updateOnFailure(requestId, "Failed", elevationErr != null ? elevationErr : "Elevation Failed", "Completed");
+                    results.add(new SubmitResponse(server, "Failed", requestId, null, elevationErr != null ? elevationErr : "Elevation Failed"));
+                }
+            } else {
+                // Approval required: create approval_details row (DB will generate ApprovalID)
+                ApprovalDetails approval = ApprovalDetails.builder()
+                        .requestId(requestId)
+                        .approver(validation.getOwnerDetails().getOwnerName())
+                        .workItemName(server + " (Duration: " + entry.getDurationInHours() + " Hours)")
+                        .workItemType("SERVER ELEVATION")
+                        .approvalStatus("Pending-Approval")
+                        .build();
+
+                approvalRepo.save(approval);
+                approvalRepo.flush();
+
+                String approvalId = approval.getApprovalId();
+                if (approvalId == null) {
+                    // reload from DB if needed (left for implementer)
+                    approvalId = approval.getApprovalId();
+                }
+
+                serverRepo.updateStatusAndApprover(requestId, "Pending-Approval", approvalId);
+                results.add(new SubmitResponse(server, "Pending-Approval", requestId, approvalId, "Waiting for Owner Approval"));
+            }
+        }
+
+        return results;
     }
 }

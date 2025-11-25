@@ -11,7 +11,7 @@
     <groupId>com.ldap</groupId>
     <artifactId>myidcustomapi-service</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <packaging>jar</packaging>
+    <packaging>war</packaging>
     <name>myidcustomapi-service</name>
     <description>myidcustomapi-service project</description>
 

@@ -2,16 +2,14 @@ package com.amat.serverelevation.controller;
 
 
 import com.amat.admanagement.service.UserService;
-import com.amat.serverelevation.DTO.ServerElevationRequest;
-import com.amat.serverelevation.DTO.ServerElevationResponse;
-import com.amat.serverelevation.DTO.SubmitElevationRequest;
-import com.amat.serverelevation.DTO.SubmitElevationResponse;
+import com.amat.serverelevation.DTO.*;
 import com.amat.serverelevation.service.ServerElevationService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -44,12 +42,13 @@ public class ElevationController {
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping("/submitRequest")
-    public ResponseEntity<SubmitElevationResponse> submitElevationRequest(
-            @RequestBody SubmitElevationRequest request) {
 
-        SubmitElevationResponse response = serverElevationService.submitElevationRequest(request);
-        return ResponseEntity.ok(response);
+    @PostMapping("/submit-requests")
+    public ResponseEntity<List<SubmitResponse>> submitRequests(@RequestBody SubmitElevationRequest request, HttpServletRequest servletRequest) {
+        String employeeId = servletRequest.getHeader("employeeId");
+
+        List<SubmitResponse> result = serverElevationService.submitElevationRequest(employeeId, request);
+        return ResponseEntity.ok(result);
     }
 
 

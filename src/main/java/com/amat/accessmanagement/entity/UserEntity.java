@@ -16,7 +16,7 @@ import java.util.Map;
 public class UserEntity {
 
     @Id
-    private Long employeeId;
+    private String employeeId;
 
     private String firstName;
     private String lastName;

@@ -21,7 +21,7 @@ public class CommonsController {
 
     @GetMapping("/getLoggedInUserDetails")
     public ResponseEntity<Object> getUser(@RequestParam(name = "additionalDetails", defaultValue = "false") boolean additionalDetails, HttpServletRequest servletRequest) {
-        Long employeeId = Long.valueOf(servletRequest.getHeader("employeeId"));
+        String employeeId = servletRequest.getHeader("employeeId");
 
         UserEntity user = svc.getUser(employeeId, additionalDetails);
 

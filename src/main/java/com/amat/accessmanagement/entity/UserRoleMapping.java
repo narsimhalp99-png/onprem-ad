@@ -24,7 +24,7 @@ public class UserRoleMapping {
     // FK column mapped as read-only mirror field
     @JsonIgnore
     @Column(name = "employee_id", insertable = false, updatable = false)
-    private Long employeeId;
+    private String employeeId;
 
     @Column(name = "AssignedRoleId", nullable = false)
     private String assignedRoleId;

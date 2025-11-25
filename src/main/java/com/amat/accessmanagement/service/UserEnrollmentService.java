@@ -50,7 +50,7 @@ public class UserEnrollmentService {
         return userRepo.findAll(pageable);
     }
 
-    public UserEntity getUser(Long employeeId, boolean additionalDetails) {
+    public UserEntity getUser(String employeeId, boolean additionalDetails) {
 
         UserEntity user = userRepo.findById(employeeId).orElse(null);
 
@@ -121,7 +121,7 @@ public class UserEnrollmentService {
     }
 
 
-    public UserEntity updateUser(Long employeeId, UserEntity update) {
+    public UserEntity updateUser(String employeeId, UserEntity update) {
         UserEntity existing = getUser(employeeId,false);
         if (update.getDisplayName() != null) existing.setDisplayName(update.getDisplayName());
         existing.setFirstName(update.getFirstName());
@@ -134,12 +134,12 @@ public class UserEnrollmentService {
         return userRepo.save(existing);
     }
 
-    public void deleteUser(Long employeeId) {
+    public void deleteUser(String employeeId) {
         UserEntity existing = getUser(employeeId,false);
         userRepo.delete(existing);
     }
 
-    public void updateUserDetails(Long employeeId, UserEntity update) {
+    public void updateUserDetails(String employeeId, UserEntity update) {
 
         UserEntity existing = getUser(employeeId, false);
 
