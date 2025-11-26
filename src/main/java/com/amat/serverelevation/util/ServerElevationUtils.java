@@ -6,25 +6,16 @@ import com.amat.admanagement.dto.UsersRequest;
 import com.amat.admanagement.service.ComputerService;
 import com.amat.admanagement.service.GroupsService;
 import com.amat.admanagement.service.UserService;
-import com.amat.serverelevation.DTO.AdComputer;
-import com.amat.serverelevation.DTO.AdGroup;
-import com.amat.serverelevation.DTO.AdUser;
-import com.amat.serverelevation.repository.ApprovalDetailsRepository;
-import com.amat.serverelevation.repository.ServerElevationRepository;
-import com.amat.serverelevation.service.LdapService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 @Service
 public class ServerElevationUtils {
 
-    @Autowired
-    ComputerService computerService;
 
     @Autowired
     GroupsService groupsService;
@@ -74,6 +65,28 @@ public class ServerElevationUtils {
 
         return (String) requestorData.get(0).get("distinguishedName");
 
+    }
+
+
+    public String fetchAdminAccountDn(String userDn) {
+        UsersRequest adminReq = UsersRequest.builder()
+                .searchBaseOU(defaultBase)
+                .filter("(&(manager=" + userDn + ")(employeeType=SA)(!(userAccountControl=514)))")
+                .pageNumber(0)
+                .pageSize(5)
+                .addtnlAttributes(List.of("manager", "employeeType", "userAccountControl"))
+                .build();
+
+        Map<String, Object> ldapResponse = userService.fetchAllObjects(adminReq);
+        List<Map<String, Object>> dataEntries = (List<Map<String, Object>>) ldapResponse.get("data");
+
+        if (dataEntries == null || dataEntries.isEmpty()) {
+            return "";
+        }
+
+        String adminDn = (String) dataEntries.get(0).get("distinguishedName");
+
+        return (adminDn != null && !adminDn.isBlank()) ? adminDn : "";
     }
 
 }

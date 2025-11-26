@@ -37,9 +37,6 @@ public class ServerElevationService {
     UserService userService;
 
     @Autowired
-    LdapService ldapService;
-
-    @Autowired
     ServerElevationRepository serverRepo;
 
     @Autowired
@@ -75,7 +72,7 @@ public class ServerElevationService {
 
         String requestorDn = (String) requestorData.get(0).get("distinguishedName");
 
-        String userAdminDn = ldapService.fetchAdminAccountDn(requestorDn);
+        String userAdminDn = utils.fetchAdminAccountDn(requestorDn);
 
 
         if (userAdminDn == null || userAdminDn.isEmpty()) {
@@ -233,7 +230,7 @@ public class ServerElevationService {
         List<SubmitResponse> results = new ArrayList<>();
 
         String userDn = utils.fetchUserDn(employeeId);
-        String userAdminDn = ldapService.fetchAdminAccountDn(userDn);
+        String userAdminDn = utils.fetchAdminAccountDn(userDn);
 
         for (SubmitServerEntry entry : request.getEligibleServers()) {
             String server = entry.getServerName();
