@@ -227,9 +227,9 @@ public class ServerElevationService {
         response.setEligibleForElevationMsg(errorMsg);
     }
 
-
+    @Async
     @Transactional
-    public List<SubmitResponse> submitElevationRequest(String employeeId, SubmitElevationRequest request) {
+    public void submitElevationRequest(String employeeId, SubmitElevationRequest request) {
         List<SubmitResponse> results = new ArrayList<>();
 
         String userDn = utils.fetchUserDn(employeeId);
@@ -333,6 +333,7 @@ public class ServerElevationService {
             }
         }
 
-        return results;
+        log.info("results list::{}", results);
+
     }
 }
