@@ -1,6 +1,7 @@
 package com.amat.serverelevation.service;
 
 
+import com.amat.accessmanagement.service.UserEnrollmentService;
 import com.amat.admanagement.dto.*;
 import com.amat.admanagement.service.ComputerService;
 import com.amat.admanagement.service.GroupsService;
@@ -15,6 +16,7 @@ import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -230,6 +232,9 @@ public class ServerElevationService {
     public List<SubmitResponse> submitElevationRequest(String employeeId, SubmitElevationRequest request) {
         List<SubmitResponse> results = new ArrayList<>();
 
+        String userDn = utils.fetchUserDn(employeeId);
+        String userAdminDn = ldapService.fetchAdminAccountDn(userDn);
+
         for (SubmitServerEntry entry : request.getEligibleServers()) {
             String server = entry.getServerName();
             com.amat.serverelevation.DTO.ServerElevationRequest validateReq = com.amat.serverelevation.DTO.ServerElevationRequest.builder()
@@ -244,6 +249,7 @@ public class ServerElevationService {
                 results.add(new SubmitResponse(server, "Failed", null, null, validation.getEligibleForElevationMsg()));
                 continue;
             }
+
             UUID guid = UUID.randomUUID();
             // Insert server_elevation_requests row (DB will generate RequestID)
             ServerElevationRequest entity = ServerElevationRequest.builder()
@@ -259,35 +265,12 @@ public class ServerElevationService {
 
             String requestId = savedServerEntity.getRequestId();
 
-
             if (!Boolean.TRUE.equals(validation.getApprovalRequired())) {
                 // No approval: try immediate elevation
                 boolean elevationSuccess = false;
                 String elevationErr = null;
 
                 try {
-
-                    // fetch userDN
-
-                    String userDn = utils.fetchUserDn(employeeId);
-
-                    if (userDn == null || userDn.isEmpty() || userDn.equals("-1")) {
-                        return null;
-                    }
-
-
-                    String userAdminDn = ldapService.fetchAdminAccountDn(userDn);
-
-
-                    if (userAdminDn == null || userAdminDn.isEmpty()) {
-                        elevationErr = "Admin account not found for requestor";
-                        elevationSuccess = false;
-                    } else {
-
-                        if (userAdminDn.isBlank()) {
-                            elevationErr = "Admin DN value empty for requestor";
-                            elevationSuccess = false;
-                        } else {
                             // 2. Build the group DN for server-local-admins
                             String groupDn = utils.fetchGroupDn(server+ "-LOCAL-ADMINS");
 
@@ -298,7 +281,7 @@ public class ServerElevationService {
                             manageReq.setOperation("ADD");   // ADD / REMOVE
 
                             // 4. Call groupService
-                            ModifyGroupResponse modifyResp = groupsService.modifyGroup(manageReq);
+                            ModifyGroupResponse modifyResp = groupsService.modifyGroupMembers(manageReq);
 
                             if ("200".equals(modifyResp.getStatusCode()) || "success".equalsIgnoreCase(modifyResp.getStatusCode())) {
                                 elevationSuccess = true;
@@ -306,8 +289,6 @@ public class ServerElevationService {
                                 elevationSuccess = false;
                                 elevationErr = String.join(", ", modifyResp.getErrors());
                             }
-                        }
-                    }
 
                 } catch (Exception ex) {
                     log.error("Elevation failed for server {}: {}", server, ex.getMessage(), ex);
@@ -344,7 +325,6 @@ public class ServerElevationService {
 
                 String approvalId = String.valueOf(approval.getApprovalId());
                 if (approvalId == null) {
-                    // reload from DB if needed (left for implementer)
                     approvalId = String.valueOf(approval.getApprovalId());
                 }
 

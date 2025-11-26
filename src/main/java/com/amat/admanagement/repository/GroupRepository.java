@@ -218,7 +218,7 @@ public class GroupRepository {
         return results.isEmpty() ? Collections.emptyList() : results.get(0);
     }
 
-    public ModifyGroupResponse modifyGroup(ManageGroupRequest request) {
+    public ModifyGroupResponse modifyGroupMembers(ManageGroupRequest request) {
         ModifyGroupResponse response = new ModifyGroupResponse();
         List<String> userNotExistList = new ArrayList<>();
         List<String> errors = new ArrayList<>();

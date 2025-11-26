@@ -26,9 +26,9 @@ public class GroupsService {
     }
 
 
-    public ModifyGroupResponse modifyGroup(ManageGroupRequest request){
+    public ModifyGroupResponse modifyGroupMembers(ManageGroupRequest request){
 
-        return groupRepository.modifyGroup(request);
+        return groupRepository.modifyGroupMembers(request);
 
     }
 }

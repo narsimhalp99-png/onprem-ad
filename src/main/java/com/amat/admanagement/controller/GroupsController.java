@@ -23,8 +23,8 @@ public class GroupsController {
     }
 
     @PostMapping("/manage-members")
-    public ResponseEntity<ModifyGroupResponse> modifyGroup(@RequestBody ManageGroupRequest request)  {
-        return ResponseEntity.ok(service.modifyGroup(request));
+    public ResponseEntity<ModifyGroupResponse> modifyGroupMembers(@RequestBody ManageGroupRequest request)  {
+        return ResponseEntity.ok(service.modifyGroupMembers(request));
     }
 }
 
