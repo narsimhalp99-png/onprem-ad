@@ -2,11 +2,19 @@ package com.amat.accessmanagement.repository;
 
 import com.amat.accessmanagement.entity.RoleDefinition;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface RoleRepository extends JpaRepository<RoleDefinition, Long> {
+
     Optional<RoleDefinition> findByRoleName(String roleName);
+
+    @Query("SELECT r FROM RoleDefinition r JOIN UserRole ur ON ur.roleId = r.roleId WHERE ur.employeeId = :employeeId")
+    List<RoleDefinition> findRolesByEmployeeId(@Param("employeeId") String employeeId);
+
 }

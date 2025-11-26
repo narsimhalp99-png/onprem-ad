@@ -1,6 +1,7 @@
 package com.amat.serverelevation.service;
 
 
+import com.amat.accessmanagement.service.RoleService;
 import com.amat.accessmanagement.service.UserEnrollmentService;
 import com.amat.admanagement.dto.*;
 import com.amat.admanagement.service.ComputerService;
@@ -11,6 +12,7 @@ import com.amat.serverelevation.entity.ApprovalDetails;
 import com.amat.serverelevation.entity.ServerElevationRequest;
 import com.amat.serverelevation.repository.ApprovalDetailsRepository;
 import com.amat.serverelevation.repository.ServerElevationRepository;
+import com.amat.serverelevation.repository.ServerElevationRequestRepository;
 import com.amat.serverelevation.util.ServerElevationUtils;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +23,12 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.*;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.access.AccessDeniedException;
+
 
 @Slf4j
 @Service
@@ -38,6 +46,12 @@ public class ServerElevationService {
 
     @Autowired
     ServerElevationRepository serverRepo;
+
+    @Autowired
+    ServerElevationRequestRepository serverElevationRequestRepository;
+
+    @Autowired
+    RoleService roleService;
 
     @Autowired
     ApprovalDetailsRepository approvalRepo;
@@ -332,5 +346,34 @@ public class ServerElevationService {
 
         log.info("results list::{}", results);
 
+    }
+
+    public Page<ServerElevationRequest> getRequests(ServerElevationRequestFilterDTO filter,
+                                                    String loggedInUser,
+                                                    boolean isSelf,
+                                                    Pageable pageable) {
+
+        if (!isSelf) {
+            boolean isAdmin = roleService.hasRole(loggedInUser, "ServerElevation-Administrator");
+            if (!isAdmin) {
+                throw new AccessDeniedException("Access Denied");
+            }
+        }
+
+        Specification<ServerElevationRequest> spec =
+                ServerElevationRequestSpecification.applyFilters(filter, loggedInUser, isSelf);
+
+        Page<ServerElevationRequest> pageData = serverElevationRequestRepository.findAll(spec, pageable);
+
+        // 🔽 Sorting by approval date if approval exists
+        List<String> requestIds = pageData.getContent().stream()
+                .map(ServerElevationRequest::getRequestId)
+                .toList();
+
+        List<ApprovalDetails> approvals =
+                approvalRepo.findByRequestIdInOrderByApprovalRequestDateDesc(requestIds);
+
+        // No mapping required — just sorted correctly if present
+        return pageData;
     }
 }

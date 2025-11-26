@@ -88,5 +88,12 @@ public class RoleService {
         return roleRepo.findAll();
     }
 
+    public boolean hasRole(String employeeId, String requiredRole) {
+        List<RoleDefinition> roles = roleRepo.findRolesByEmployeeId(employeeId);
+
+        return roles.stream()
+                .anyMatch(role -> role.getRoleName().equalsIgnoreCase(requiredRole));
+    }
+
 
 }
