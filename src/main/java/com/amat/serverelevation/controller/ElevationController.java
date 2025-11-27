@@ -2,13 +2,18 @@ package com.amat.serverelevation.controller;
 
 
 import com.amat.serverelevation.DTO.*;
+import com.amat.serverelevation.entity.ServerElevationRequest;
 import com.amat.serverelevation.service.ServerElevationService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Collections;
+import java.util.Map;
 
 
 @RestController
@@ -22,7 +27,7 @@ public class ElevationController {
     public ResponseEntity<ServerElevationResponse> validateServerElevation( @RequestParam(name = "serverName", defaultValue = "") String serverName, HttpServletRequest servletRequest) {
 
         String employeeId = servletRequest.getHeader("employeeId");
-        ServerElevationRequest request = new ServerElevationRequest();
+        ServerElevationRequestDTO request = new ServerElevationRequestDTO();
         request.setServerName(serverName);
         request.setRequestorEmpId(employeeId);
 
@@ -51,6 +56,31 @@ public class ElevationController {
                 "message",
                 "Request submitted successfully and being processed"
         ));
+    }
+
+    @GetMapping("/get-requests")
+    public ResponseEntity<?> getRequests(
+            @RequestParam String requestedBy,  // self/any
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            ServerElevationRequestFilterDTO filter,
+            HttpServletRequest req) {
+
+        String loggedInUser = req.getHeader("employeeId");
+
+        boolean isSelf = requestedBy.equalsIgnoreCase("self");
+
+        Pageable pageable = PageRequest.of(page, size);
+
+        Page<ServerElevationRequest> response =
+                serverElevationService.getRequests(filter, loggedInUser, isSelf, pageable);
+
+        return ResponseEntity.ok(
+                Map.of(
+                        "message", "Requests fetched successfully",
+                        "page", response
+                )
+        );
     }
 
 

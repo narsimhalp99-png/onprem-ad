@@ -88,12 +88,13 @@ public class RoleService {
         return roleRepo.findAll();
     }
 
-    public boolean hasRole(String employeeId, String requiredRole) {
-        List<RoleDefinition> roles = roleRepo.findRolesByEmployeeId(employeeId);
+    public boolean hasRole(String employeeId, String requiredRoleId) {
+        UserRoleMapping mapping =
+                userRoleRepo.findByEmployeeIdAndAssignedRoleId(employeeId, requiredRoleId);
 
-        return roles.stream()
-                .anyMatch(role -> role.getRoleName().equalsIgnoreCase(requiredRole));
+        return mapping != null && Boolean.TRUE.equals(mapping.getAssignedRoleStatus());
     }
+
 
 
 }

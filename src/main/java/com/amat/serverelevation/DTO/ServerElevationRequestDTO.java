@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class ServerElevationRequest {
+public class ServerElevationRequestDTO {
     private String serverName;
     private String requestorEmpId;
 }

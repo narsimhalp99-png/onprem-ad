@@ -2,7 +2,6 @@ package com.amat.serverelevation.service;
 
 
 import com.amat.accessmanagement.service.RoleService;
-import com.amat.accessmanagement.service.UserEnrollmentService;
 import com.amat.admanagement.dto.*;
 import com.amat.admanagement.service.ComputerService;
 import com.amat.admanagement.service.GroupsService;
@@ -63,7 +62,7 @@ public class ServerElevationService {
     String defaultBase;
 
 
-    public ServerElevationResponse validateRequest(com.amat.serverelevation.DTO.ServerElevationRequest request) {
+    public ServerElevationResponse validateRequest(ServerElevationRequestDTO request) {
         ServerElevationResponse response = ServerElevationResponse.builder()
                 .serverName(request.getServerName())
                 .build();
@@ -248,7 +247,7 @@ public class ServerElevationService {
 
         for (SubmitServerEntry entry : request.getEligibleServers()) {
             String server = entry.getServerName();
-            com.amat.serverelevation.DTO.ServerElevationRequest validateReq = com.amat.serverelevation.DTO.ServerElevationRequest.builder()
+            ServerElevationRequestDTO validateReq = ServerElevationRequestDTO.builder()
                     .serverName(server)
                     .requestorEmpId(employeeId)
                     .build();
