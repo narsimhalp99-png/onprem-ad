@@ -58,7 +58,7 @@ public class ElevationController {
         ));
     }
 
-    @PostMapping("/get-requests")
+    @PostMapping("/get-approvals")
     public ResponseEntity<?> getRequests(
             @RequestBody getApprovalsDTO approvalsDTO,
             HttpServletRequest req) {
