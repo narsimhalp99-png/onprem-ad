@@ -167,6 +167,7 @@ public class ServerElevationService {
                 .searchBaseOU(defaultBase)
                 .filter("(cn=" + localAdminGroup + ")")
                 .addtnlAttributes(List.of("member"))
+                .fetchRecursiveMembers(false)
                 .pageNumber(0)
                 .pageSize(1)
                 .build();
@@ -203,7 +204,7 @@ public class ServerElevationService {
                     .filter("(cn=" + adminGroup + ")")
                     .pageSize(2)
                     .pageNumber(0)
-                    .fetchRecursiveMembers(true)
+                    .fetchRecursiveMembers(false)
                     .build();
 
             Map<String, Object> recursiveGroupResult = groupsService.fetchAllGroups(recursiveGroupReq);
