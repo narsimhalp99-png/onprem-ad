@@ -1,6 +1,6 @@
-package com.amat.serverelevation.service;
+package com.amat.approverequests.service;
 
-import com.amat.serverelevation.DTO.getApprovalsDTO;
+import com.amat.approverequests.dto.getApprovalsDTO;
 import com.amat.serverelevation.entity.ServerElevationRequest;
 import org.springframework.data.jpa.domain.Specification;
 

@@ -1,4 +1,4 @@
-package com.amat.serverelevation.repository;
+package com.amat.approverequests.repository;
 
 
 import com.amat.serverelevation.entity.ServerElevationRequest;

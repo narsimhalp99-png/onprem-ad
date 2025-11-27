@@ -1,4 +1,4 @@
-package com.amat.serverelevation.DTO;
+package com.amat.approverequests.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

@@ -1,6 +1,7 @@
 package com.amat.serverelevation.controller;
 
 
+import com.amat.approverequests.dto.getApprovalsDTO;
 import com.amat.serverelevation.DTO.*;
 import com.amat.serverelevation.entity.ServerElevationRequest;
 import com.amat.serverelevation.service.ServerElevationService;
@@ -58,27 +59,6 @@ public class ElevationController {
         ));
     }
 
-    @PostMapping("/get-approvals")
-    public ResponseEntity<?> getRequests(
-            @RequestBody getApprovalsDTO approvalsDTO,
-            HttpServletRequest req) {
-
-        String loggedInUser = req.getHeader("employeeId");
-
-        boolean isSelf = approvalsDTO.getRequestedBy().equalsIgnoreCase("self");
-
-        Pageable pageable = PageRequest.of(approvalsDTO.getPage(), approvalsDTO.getSize());
-
-        Page<ServerElevationRequest> response =
-                serverElevationService.getRequests(approvalsDTO, loggedInUser, isSelf, pageable);
-
-        return ResponseEntity.ok(
-                Map.of(
-                        "message", "Requests fetched successfully",
-                        "page", response
-                )
-        );
-    }
 
 
 }
