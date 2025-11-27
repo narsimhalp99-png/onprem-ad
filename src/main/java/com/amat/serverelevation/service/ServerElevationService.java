@@ -347,7 +347,7 @@ public class ServerElevationService {
 
     }
 
-    public Page<ServerElevationRequest> getRequests(ServerElevationRequestFilterDTO filter,
+    public Page<ServerElevationRequest> getRequests(getApprovalsDTO approvalsDTO,
                                                     String loggedInUser,
                                                     boolean isSelf,
                                                     Pageable pageable) {
@@ -360,7 +360,7 @@ public class ServerElevationService {
         }
 
         Specification<ServerElevationRequest> spec =
-                ServerElevationRequestSpecification.applyFilters(filter, loggedInUser, isSelf);
+                ServerElevationRequestSpecification.applyFilters(approvalsDTO, loggedInUser, isSelf);
 
         Page<ServerElevationRequest> pageData = serverElevationRequestRepository.findAll(spec, pageable);
 

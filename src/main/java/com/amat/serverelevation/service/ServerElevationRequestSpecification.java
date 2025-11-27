@@ -1,6 +1,6 @@
 package com.amat.serverelevation.service;
 
-import com.amat.serverelevation.DTO.ServerElevationRequestFilterDTO;
+import com.amat.serverelevation.DTO.getApprovalsDTO;
 import com.amat.serverelevation.entity.ServerElevationRequest;
 import org.springframework.data.jpa.domain.Specification;
 
@@ -10,7 +10,7 @@ import jakarta.persistence.criteria.Predicate;
 
 public class ServerElevationRequestSpecification {
 
-    public static Specification<ServerElevationRequest> applyFilters(ServerElevationRequestFilterDTO filter, String requestedBy, boolean isSelf) {
+    public static Specification<ServerElevationRequest> applyFilters(getApprovalsDTO approvalsDTO, String requestedBy, boolean isSelf) {
         return (root, query, cb) -> {
 
             List<Predicate> predicates = new ArrayList<>();
@@ -19,29 +19,29 @@ public class ServerElevationRequestSpecification {
                 predicates.add(cb.equal(root.get("requestedBy"), requestedBy));
             }
 
-            if (filter.getServerName() != null) {
+            if (approvalsDTO.getFilter().getServerName() != null) {
                 predicates.add(cb.like(cb.lower(root.get("serverName")),
-                        "%" + filter.getServerName().toLowerCase() + "%"));
+                        "%" + approvalsDTO.getFilter().getServerName().toLowerCase() + "%"));
             }
 
-            if (filter.getStatus() != null) {
-                predicates.add(cb.equal(root.get("status"), filter.getStatus()));
+            if (approvalsDTO.getFilter().getStatus() != null) {
+                predicates.add(cb.equal(root.get("status"), approvalsDTO.getFilter().getStatus()));
             }
 
-            if (filter.getElevationStatus() != null) {
-                predicates.add(cb.equal(root.get("elevationStatus"), filter.getElevationStatus()));
+            if (approvalsDTO.getFilter().getElevationStatus() != null) {
+                predicates.add(cb.equal(root.get("elevationStatus"), approvalsDTO.getFilter().getElevationStatus()));
             }
 
-            if (filter.getDeElevationStatus() != null) {
-                predicates.add(cb.equal(root.get("deElevationStatus"), filter.getDeElevationStatus()));
+//            if (approvalsDTO.getFilter().getDeElevationStatus() != null) {
+//                predicates.add(cb.equal(root.get("deElevationStatus"), approvalsDTO.getFilter().getDeElevationStatus()));
+//            }
+
+            if (approvalsDTO.getFilter().getFromDate() != null) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("requestDate"), approvalsDTO.getFilter().getFromDate()));
             }
 
-            if (filter.getFromDate() != null) {
-                predicates.add(cb.greaterThanOrEqualTo(root.get("requestDate"), filter.getFromDate()));
-            }
-
-            if (filter.getToDate() != null) {
-                predicates.add(cb.lessThanOrEqualTo(root.get("requestDate"), filter.getToDate()));
+            if (approvalsDTO.getFilter().getToDate() != null) {
+                predicates.add(cb.lessThanOrEqualTo(root.get("requestDate"), approvalsDTO.getFilter().getToDate()));
             }
 
             return cb.and(predicates.toArray(new Predicate[0]));

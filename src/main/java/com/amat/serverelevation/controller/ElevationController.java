@@ -58,22 +58,19 @@ public class ElevationController {
         ));
     }
 
-    @GetMapping("/get-requests")
+    @PostMapping("/get-requests")
     public ResponseEntity<?> getRequests(
-            @RequestParam String requestedBy,  // self/any
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            ServerElevationRequestFilterDTO filter,
+            @RequestBody getApprovalsDTO approvalsDTO,
             HttpServletRequest req) {
 
         String loggedInUser = req.getHeader("employeeId");
 
-        boolean isSelf = requestedBy.equalsIgnoreCase("self");
+        boolean isSelf = approvalsDTO.getRequestedBy().equalsIgnoreCase("self");
 
-        Pageable pageable = PageRequest.of(page, size);
+        Pageable pageable = PageRequest.of(approvalsDTO.getPage(), approvalsDTO.getSize());
 
         Page<ServerElevationRequest> response =
-                serverElevationService.getRequests(filter, loggedInUser, isSelf, pageable);
+                serverElevationService.getRequests(approvalsDTO, loggedInUser, isSelf, pageable);
 
         return ResponseEntity.ok(
                 Map.of(

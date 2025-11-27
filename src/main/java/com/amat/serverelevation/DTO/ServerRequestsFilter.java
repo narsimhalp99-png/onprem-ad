@@ -1,22 +1,22 @@
 package com.amat.serverelevation.DTO;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-public class ServerElevationRequestFilterDTO {
+public class ServerRequestsFilter {
+
     private String serverName;
     private String status;
     private String elevationStatus;
-    private String deElevationStatus;
+//    private String deElevationStatus;
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime fromDate;
+
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime toDate;
 }
-
