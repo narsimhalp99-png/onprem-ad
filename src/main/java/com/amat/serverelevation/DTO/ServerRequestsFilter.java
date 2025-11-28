@@ -21,4 +21,7 @@ public class ServerRequestsFilter {
 
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime toDate;
+
+    private String sortField;
+    private String sortDirection;
 }
