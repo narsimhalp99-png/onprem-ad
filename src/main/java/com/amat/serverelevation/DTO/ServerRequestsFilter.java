@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 public class ServerRequestsFilter {
 
     private String requestedBy;
-
+    private String requestorName;
     private String serverName;
     private String status;
     private String elevationStatus;

@@ -363,6 +363,11 @@ public class ServerElevationService {
             }
         }
 
+        if(serverEleReq.getFilter().getRequestorName()!=null && !serverEleReq.getFilter().getRequestorName().isBlank()){
+            loggedInUser = serverEleReq.getFilter().getRequestorName();
+            isSelf=true;
+        }
+
         Specification<ServerElevationRequest> spec =
                 ServerElevationRequestSpecification.applyFilters(serverEleReq, loggedInUser, isSelf);
 

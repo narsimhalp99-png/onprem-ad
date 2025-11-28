@@ -18,4 +18,7 @@ public class ApprovalDetailsFilterDTO {
 
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime toDate;
+
+    private String sortField;
+    private String sortDirection;
 }

@@ -24,6 +24,11 @@ public class ServerElevationRequestSpecification {
                         "%" + approvalsDTO.getFilter().getServerName().toLowerCase() + "%"));
             }
 
+            if (approvalsDTO.getFilter().getServerName() != null) {
+                predicates.add(cb.like(cb.lower(root.get("serverName")),
+                        "%" + approvalsDTO.getFilter().getServerName().toLowerCase() + "%"));
+            }
+
             if (approvalsDTO.getFilter().getStatus() != null) {
                 predicates.add(cb.equal(root.get("status"), approvalsDTO.getFilter().getStatus()));
             }

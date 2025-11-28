@@ -27,7 +27,18 @@ public class ApprovalsService {
 
     public Page<ApprovalDetails> getApprovalDetails(ApprovalDetailsSearchDTO request, ApprovalDetailsFilterDTO filter, int page, int size) {
 
-        Pageable pageable = PageRequest.of(page, size, Sort.by("approvalRequestDate").descending());
+
+        String validSortField = (filter.getSortField() != null && !filter.getSortField() .isEmpty())
+                ? filter.getSortField()
+                : "approvalRequestDate";
+
+        Sort.Direction direction = (filter.getSortDirection()  != null && filter.getSortDirection().equalsIgnoreCase("desc"))
+                ? Sort.Direction.DESC
+                : Sort.Direction.ASC;
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, validSortField));
+
+//        Pageable pageable = PageRequest.of(page, size, Sort.by("approvalRequestDate").ascending());
 
         Specification<ApprovalDetails> spec = (root, query, cb) -> {
             List<Predicate> predicates = new java.util.ArrayList<>();
