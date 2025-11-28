@@ -19,29 +19,29 @@ public class ServerElevationRequestSpecification {
                 predicates.add(cb.equal(root.get("requestedBy"), requestedBy));
             }
 
-            if (approvalsDTO.getFilter().getServerName() != null) {
+            if (approvalsDTO.getFilter().getServerName() != null && !approvalsDTO.getFilter().getServerName().isEmpty()) {
                 predicates.add(cb.like(cb.lower(root.get("serverName")),
                         "%" + approvalsDTO.getFilter().getServerName().toLowerCase() + "%"));
             }
 
-            if (approvalsDTO.getFilter().getServerName() != null) {
+            if (approvalsDTO.getFilter().getServerName() != null && !approvalsDTO.getFilter().getServerName().isEmpty()) {
                 predicates.add(cb.like(cb.lower(root.get("serverName")),
                         "%" + approvalsDTO.getFilter().getServerName().toLowerCase() + "%"));
             }
 
-            if (approvalsDTO.getFilter().getStatus() != null) {
+            if (approvalsDTO.getFilter().getStatus() != null && !approvalsDTO.getFilter().getStatus().isEmpty()) {
                 predicates.add(cb.equal(root.get("status"), approvalsDTO.getFilter().getStatus()));
             }
 
-            if (approvalsDTO.getFilter().getElevationStatus() != null) {
+            if (approvalsDTO.getFilter().getElevationStatus() != null&& !approvalsDTO.getFilter().getElevationStatus().isEmpty()) {
                 predicates.add(cb.equal(root.get("elevationStatus"), approvalsDTO.getFilter().getElevationStatus()));
             }
 
-            if (approvalsDTO.getFilter().getDeElevationStatus() != null) {
+            if (approvalsDTO.getFilter().getDeElevationStatus() != null && !approvalsDTO.getFilter().getDeElevationStatus().isEmpty()) {
                 predicates.add(cb.equal(root.get("deElevationStatus"), approvalsDTO.getFilter().getDeElevationStatus()));
             }
 
-            if (approvalsDTO.getFilter().getFromDate() != null) {
+            if (approvalsDTO.getFilter().getFromDate() != null ) {
                 predicates.add(cb.greaterThanOrEqualTo(root.get("requestDate"), approvalsDTO.getFilter().getFromDate()));
             }
 
