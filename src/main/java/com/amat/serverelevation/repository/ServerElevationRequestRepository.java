@@ -1,5 +1,4 @@
-package com.amat.approverequests.repository;
-
+package com.amat.serverelevation.repository;
 
 import com.amat.serverelevation.entity.ServerElevationRequest;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -11,4 +10,3 @@ public interface ServerElevationRequestRepository extends
         JpaRepository<ServerElevationRequest, Integer>,
         JpaSpecificationExecutor<ServerElevationRequest> {
 }
-

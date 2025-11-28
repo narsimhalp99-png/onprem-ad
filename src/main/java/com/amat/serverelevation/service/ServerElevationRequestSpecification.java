@@ -1,6 +1,6 @@
-package com.amat.approverequests.service;
+package com.amat.serverelevation.service;
 
-import com.amat.approverequests.dto.getApprovalsDTO;
+import com.amat.serverelevation.DTO.getServerElevationRequests;
 import com.amat.serverelevation.entity.ServerElevationRequest;
 import org.springframework.data.jpa.domain.Specification;
 
@@ -10,7 +10,7 @@ import jakarta.persistence.criteria.Predicate;
 
 public class ServerElevationRequestSpecification {
 
-    public static Specification<ServerElevationRequest> applyFilters(getApprovalsDTO approvalsDTO, String requestedBy, boolean isSelf) {
+    public static Specification<ServerElevationRequest> applyFilters(getServerElevationRequests approvalsDTO, String requestedBy, boolean isSelf) {
         return (root, query, cb) -> {
 
             List<Predicate> predicates = new ArrayList<>();
@@ -32,9 +32,9 @@ public class ServerElevationRequestSpecification {
                 predicates.add(cb.equal(root.get("elevationStatus"), approvalsDTO.getFilter().getElevationStatus()));
             }
 
-//            if (approvalsDTO.getFilter().getDeElevationStatus() != null) {
-//                predicates.add(cb.equal(root.get("deElevationStatus"), approvalsDTO.getFilter().getDeElevationStatus()));
-//            }
+            if (approvalsDTO.getFilter().getDeElevationStatus() != null) {
+                predicates.add(cb.equal(root.get("deElevationStatus"), approvalsDTO.getFilter().getDeElevationStatus()));
+            }
 
             if (approvalsDTO.getFilter().getFromDate() != null) {
                 predicates.add(cb.greaterThanOrEqualTo(root.get("requestDate"), approvalsDTO.getFilter().getFromDate()));

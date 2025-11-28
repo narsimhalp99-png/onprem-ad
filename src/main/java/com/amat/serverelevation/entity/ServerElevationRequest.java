@@ -1,6 +1,7 @@
 package com.amat.serverelevation.entity;
 
 import jakarta.persistence.*;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.*;
 import lombok.Data;
 import org.hibernate.annotations.GenerationTime;
@@ -52,13 +53,21 @@ public class ServerElevationRequest {
 
     private String elevationStatus;
 
+    private LocalDateTime deElevationTime;
+
+    private String deElevationStatus;
+
     @Column(columnDefinition = "nvarchar(max)")
     private String elevationStatusMessage;
+
+    @Column(columnDefinition = "nvarchar(max)")
+    private String deElevationStatusMessage;
 
     @Column(nullable = false)
     private String status;
 
     private String approverId;
+
 
 
 }

@@ -1,4 +1,4 @@
-package com.amat.approverequests.dto;
+package com.amat.serverelevation.DTO;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class getApprovalsDTO {
+public class getServerElevationRequests {
     private String requestedBy;
     private int page;
     private int size;
