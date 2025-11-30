@@ -61,7 +61,7 @@ public class ElevationController {
     }
 
     @PostMapping("/get-requests")
-    public ResponseEntity<?> getRequests(
+    public Object getRequests(
             @RequestBody getServerElevationRequests serverEleReq,
             HttpServletRequest req) {
 
@@ -79,15 +79,10 @@ public class ElevationController {
 
         Pageable pageable = PageRequest.of(serverEleReq.getPage(), serverEleReq.getSize(), Sort.by(direction, validSortField));
 
-        Page<ServerElevationRequest> response =
-                serverElevationService.getRequests(serverEleReq, loggedInUser, isSelf, pageable);
 
-        return ResponseEntity.ok(
-                Map.of(
-                        "message", "Requests fetched successfully",
-                        "page", response
-                )
-        );
+        return serverElevationService.getRequests(serverEleReq, loggedInUser, isSelf, pageable);
+
+
     }
 
 

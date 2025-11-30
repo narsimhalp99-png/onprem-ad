@@ -1,4 +1,4 @@
-package com.amat.admanagement.config;
+package com.amat.config;
 
 
 import com.amat.admanagement.service.CustomUserDetailsService;

@@ -20,6 +20,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -353,7 +355,7 @@ public class ServerElevationService {
     }
 
 
-    public Page<ServerElevationRequest> getRequests(getServerElevationRequests serverEleReq,
+    public Object getRequests(getServerElevationRequests serverEleReq,
                                                     String loggedInUser,
                                                     boolean isSelf,
                                                     Pageable pageable) {
@@ -361,7 +363,12 @@ public class ServerElevationService {
         if (!isSelf) {
             boolean isAdmin = roleService.hasRole(loggedInUser, "ServerElevation-Administrator");
             if (!isAdmin) {
-                throw new AccessDeniedException("Access Denied");
+                return ResponseEntity
+                        .status(HttpStatus.FORBIDDEN)
+                        .body(Map.of(
+                                "status", "FAILED",
+                                "message", "Access Denied: You are not authorized to view this information"
+                        ));
             }
         }
 
@@ -385,7 +392,7 @@ public class ServerElevationService {
                 approvalRepo.findByRequestIdInOrderByApprovalRequestDateDesc(requestIds);
 
         // No mapping required — just sorted correctly if present
-        return pageData;
+        return ResponseEntity.ok(pageData);
     }
 
 }
