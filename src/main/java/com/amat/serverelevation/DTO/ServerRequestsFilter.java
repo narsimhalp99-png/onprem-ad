@@ -15,6 +15,7 @@ public class ServerRequestsFilter {
     private String status;
     private String elevationStatus;
     private String deElevationStatus;
+    private String requestId;
 
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime fromDate;

@@ -1,6 +1,8 @@
 package com.amat.serverelevation.service;
 
 
+import com.amat.accessmanagement.entity.UserEntity;
+import com.amat.accessmanagement.repository.UserEnrollmentRepository;
 import com.amat.accessmanagement.service.RoleService;
 import com.amat.admanagement.dto.*;
 import com.amat.admanagement.service.ComputerService;
@@ -64,8 +66,12 @@ public class ServerElevationService {
     @Autowired
     ServerElevationUtils utils;
 
+    @Autowired
+    UserEnrollmentRepository userEnrollmentRepository;
+
     @Value("${spring.ldap.base:''}")
     String defaultBase;
+
 
 
     public ServerElevationResponse validateRequest(ServerElevationRequestDTO request) {
@@ -331,9 +337,11 @@ public class ServerElevationService {
                 // Approval required: create approval_details row (DB will generate ApprovalID)
                 ApprovalDetails approval = ApprovalDetails.builder()
                         .requestId(requestId)
-                        .approver(validation.getOwnerDetails().getOwnerName())
+                        .approver(validation.getOwnerDetails().getOwnerEmpID())
+                        .approverName(getOwnDisplayName(validation.getOwnerDetails().getOwnerEmpID()))
+                        .requestorEmpId(employeeId)
                         .workItemName(server + " (Duration: " + entry.getDurationInHours() + " Hours)")
-                        .workItemType("SERVER ELEVATION")
+                        .workItemType("SERVER-ELEVATION")
                         .approvalStatus("Pending-Approval")
                         .build();
 
@@ -394,5 +402,12 @@ public class ServerElevationService {
         // No mapping required — just sorted correctly if present
         return ResponseEntity.ok(pageData);
     }
+
+    private String getOwnDisplayName(String ownerEmpId) {
+        return userEnrollmentRepository.findById(ownerEmpId)
+                .map(UserEntity::getDisplayName)
+                .orElse("");
+    }
+
 
 }

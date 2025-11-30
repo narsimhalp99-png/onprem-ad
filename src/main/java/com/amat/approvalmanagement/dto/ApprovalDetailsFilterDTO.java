@@ -8,10 +8,13 @@ import java.time.LocalDateTime;
 @Data
 public class ApprovalDetailsFilterDTO {
 
+    private String requestId;
     private String approver;
     private String approvalStatus;
     private String workItemType;
     private String workItemName;
+    private String approverName;
+    private String requestorEmpId;
 
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime fromDate;

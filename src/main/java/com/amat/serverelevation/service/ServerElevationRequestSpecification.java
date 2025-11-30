@@ -33,6 +33,10 @@ public class ServerElevationRequestSpecification {
                 predicates.add(cb.equal(root.get("status"), approvalsDTO.getFilter().getStatus()));
             }
 
+            if (approvalsDTO.getFilter().getRequestId() != null && !approvalsDTO.getFilter().getRequestId().isEmpty()) {
+                predicates.add(cb.equal(root.get("requestId"), approvalsDTO.getFilter().getRequestId()));
+            }
+
             if (approvalsDTO.getFilter().getElevationStatus() != null&& !approvalsDTO.getFilter().getElevationStatus().isEmpty()) {
                 predicates.add(cb.equal(root.get("elevationStatus"), approvalsDTO.getFilter().getElevationStatus()));
             }

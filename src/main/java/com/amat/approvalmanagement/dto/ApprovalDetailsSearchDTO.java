@@ -5,8 +5,8 @@ import lombok.Data;
 
 @Data
 public class ApprovalDetailsSearchDTO {
+    private String requestedBy;
     private int page = 0;
     private int size = 10;
-    private String requestId;
     ApprovalDetailsFilterDTO filter;
 }

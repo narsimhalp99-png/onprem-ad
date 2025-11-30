@@ -2,19 +2,26 @@ package com.amat.approvalmanagement.service;
 
 
 
+import com.amat.accessmanagement.service.RoleService;
 import com.amat.approvalmanagement.dto.ApprovalDetailsFilterDTO;
 import com.amat.approvalmanagement.dto.ApprovalDetailsSearchDTO;
 import com.amat.approvalmanagement.repository.ApprovalDetailsFilterRepository;
 import com.amat.serverelevation.entity.ApprovalDetails;
+import com.amat.serverelevation.entity.ServerElevationRequest;
 import com.amat.serverelevation.repository.ApprovalDetailsRepository;
+import com.amat.serverelevation.service.ServerElevationRequestSpecification;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
 
-import java.util.List;
+
+import java.util.Map;
+
 
 @Slf4j
 @Service
@@ -24,8 +31,28 @@ public class ApprovalsService {
     @Autowired
     ApprovalDetailsFilterRepository approvalRepo;
 
+    @Autowired
+    RoleService roleService;
 
-    public Page<ApprovalDetails> getApprovalDetails(ApprovalDetailsSearchDTO request, ApprovalDetailsFilterDTO filter, int page, int size) {
+
+    public Object getApprovalDetails(ApprovalDetailsFilterDTO filter, int page, int size, String loggedInUser, boolean isSelf) {
+
+        if (!isSelf) {
+            boolean isAdmin = roleService.hasRole(loggedInUser, "ServerElevation-Administrator");
+            if (!isAdmin) {
+                return ResponseEntity
+                        .status(HttpStatus.FORBIDDEN)
+                        .body(Map.of(
+                                "status", "FAILED",
+                                "message", "Access Denied: You are not authorized to view this information"
+                        ));
+            }
+        }
+
+        if(filter.getRequestorEmpId()!=null && !filter.getRequestorEmpId().isBlank()){
+            loggedInUser = filter.getRequestorEmpId();
+            isSelf=true;
+        }
 
 
         String validSortField = (filter.getSortField() != null && !filter.getSortField() .isEmpty())
@@ -38,39 +65,13 @@ public class ApprovalsService {
 
         Pageable pageable = PageRequest.of(page, size, Sort.by(direction, validSortField));
 
-//        Pageable pageable = PageRequest.of(page, size, Sort.by("approvalRequestDate").ascending());
 
-        Specification<ApprovalDetails> spec = (root, query, cb) -> {
-            List<Predicate> predicates = new java.util.ArrayList<>();
+        Specification<ApprovalDetails> spec = ApprovalDetailsRequestSpecification.applyFilters(filter, loggedInUser, isSelf);
 
-            if (request.getRequestId() != null && !request.getRequestId().isEmpty()) {
-                predicates.add(cb.equal(root.get("requestId"), request.getRequestId()));
-            }
-            if (filter.getApprover() != null && !filter.getApprover().isEmpty()) {
-                predicates.add(cb.like(cb.lower(root.get("approver")), "%" + filter.getApprover().toLowerCase() + "%"));
-            }
-            if (filter.getApprovalStatus() != null && !filter.getApprovalStatus().isEmpty()) {
-                predicates.add(cb.equal(root.get("approvalStatus"), filter.getApprovalStatus()));
-            }
-            if (filter.getWorkItemType() != null && !filter.getWorkItemType().isEmpty()) {
-                predicates.add(cb.equal(root.get("workItemType"), filter.getWorkItemType()));
-            }
-            if (filter.getWorkItemName() != null && !filter.getWorkItemName().isEmpty()) {
-                predicates.add(cb.like(cb.lower(root.get("workItemName")), "%" + filter.getWorkItemName().toLowerCase() + "%"));
-            }
-
-            if (filter.getFromDate() != null) {
-                predicates.add(cb.greaterThanOrEqualTo(root.get("approvalRequestDate"), filter.getFromDate()));
-            }
-            if (filter.getToDate() != null) {
-                predicates.add(cb.lessThanOrEqualTo(root.get("approvalRequestDate"), filter.getToDate()));
-            }
-
-            return cb.and(predicates.toArray(new Predicate[0]));
-        };
 
         return approvalRepo.findAll(spec, pageable);
     }
+
 
 
 }

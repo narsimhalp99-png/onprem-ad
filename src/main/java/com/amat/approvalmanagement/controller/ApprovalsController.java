@@ -4,6 +4,7 @@ package com.amat.approvalmanagement.controller;
 import com.amat.approvalmanagement.dto.ApprovalDetailsSearchDTO;
 import com.amat.approvalmanagement.service.ApprovalsService;
 import com.amat.serverelevation.entity.ApprovalDetails;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authorization.method.AuthorizeReturnObject;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -23,15 +24,19 @@ public class ApprovalsController {
     ApprovalsService approvalService;
 
     @PostMapping("/get-approval-details")
-    public ResponseEntity<?> getApprovalDetails(@RequestBody ApprovalDetailsSearchDTO request) {
+    public Object getApprovalDetails(@RequestBody ApprovalDetailsSearchDTO request, HttpServletRequest req) {
 
-        Page<ApprovalDetails> result = approvalService.getApprovalDetails(request,
+        String loggedInUser = req.getHeader("employeeId");
+        boolean isSelf = request.getRequestedBy().equalsIgnoreCase("self");
+
+
+        return approvalService.getApprovalDetails(
                 request.getFilter(),
                 request.getPage(),
-                request.getSize()
+                request.getSize(),
+                loggedInUser,
+                isSelf
         );
-
-        return ResponseEntity.ok(result);
     }
 
 }

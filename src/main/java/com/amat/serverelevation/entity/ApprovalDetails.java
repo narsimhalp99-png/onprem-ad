@@ -41,6 +41,10 @@ public class ApprovalDetails {
     @Column(nullable = false)
     private String approver;
 
+    private String approverName;
+
+    private String requestorEmpId;
+
     @Column(length = 500)
     private String workItemName;
 
