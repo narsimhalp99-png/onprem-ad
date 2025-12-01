@@ -43,8 +43,6 @@ public class ApprovalDetails {
 
     private String approverName;
 
-    private String requestorEmpId;
-
     @Column(length = 500)
     private String workItemName;
 

@@ -89,10 +89,10 @@ public class RoleService {
     }
 
     public boolean hasRole(String employeeId, String requiredRoleId) {
-        UserRoleMapping mapping =
-                userRoleRepo.findByEmployeeIdAndAssignedRoleId(employeeId, requiredRoleId);
+        UserRoleMapping mapping1 =   userRoleRepo.findByEmployeeIdAndAssignedRoleId(employeeId, requiredRoleId);
+        UserRoleMapping mapping2 =   userRoleRepo.findByEmployeeIdAndAssignedRoleId(employeeId, "System-Administrator");
 
-        return mapping != null && Boolean.TRUE.equals(mapping.getAssignedRoleStatus());
+        return (mapping2 != null && Boolean.TRUE.equals(mapping2.getAssignedRoleStatus()) )|| (mapping1 != null && Boolean.TRUE.equals(mapping1.getAssignedRoleStatus()));
     }
 
 

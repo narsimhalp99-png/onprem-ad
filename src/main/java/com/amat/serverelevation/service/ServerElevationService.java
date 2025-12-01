@@ -339,7 +339,6 @@ public class ServerElevationService {
                         .requestId(requestId)
                         .approver(validation.getOwnerDetails().getOwnerEmpID())
                         .approverName(getOwnDisplayName(validation.getOwnerDetails().getOwnerEmpID()))
-                        .requestorEmpId(employeeId)
                         .workItemName(server + " (Duration: " + entry.getDurationInHours() + " Hours)")
                         .workItemType("SERVER-ELEVATION")
                         .approvalStatus("Pending-Approval")

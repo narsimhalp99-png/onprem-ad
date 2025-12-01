@@ -38,7 +38,7 @@ public class ApprovalsService {
     public Object getApprovalDetails(ApprovalDetailsFilterDTO filter, int page, int size, String loggedInUser, boolean isSelf) {
 
         if (!isSelf) {
-            boolean isAdmin = roleService.hasRole(loggedInUser, "ServerElevation-Administrator");
+            boolean isAdmin = roleService.hasRole(loggedInUser, "Approval-Administrator");
             if (!isAdmin) {
                 return ResponseEntity
                         .status(HttpStatus.FORBIDDEN)
@@ -49,8 +49,8 @@ public class ApprovalsService {
             }
         }
 
-        if(filter.getRequestorEmpId()!=null && !filter.getRequestorEmpId().isBlank()){
-            loggedInUser = filter.getRequestorEmpId();
+        if(filter.getApprover()!=null && !filter.getApprover().isBlank()){
+            loggedInUser = filter.getApprover();
             isSelf=true;
         }
 

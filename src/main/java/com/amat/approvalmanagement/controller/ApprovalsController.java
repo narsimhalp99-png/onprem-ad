@@ -27,8 +27,7 @@ public class ApprovalsController {
     public Object getApprovalDetails(@RequestBody ApprovalDetailsSearchDTO request, HttpServletRequest req) {
 
         String loggedInUser = req.getHeader("employeeId");
-        boolean isSelf = request.getRequestedBy().equalsIgnoreCase("self");
-
+        boolean isSelf = request.getAssignedTo().equalsIgnoreCase("self");
 
         return approvalService.getApprovalDetails(
                 request.getFilter(),

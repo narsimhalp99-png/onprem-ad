@@ -16,7 +16,7 @@ public class ApprovalDetailsRequestSpecification {
             List<Predicate> predicates = new java.util.ArrayList<>();
 
             if (isSelf) {
-                predicates.add(cb.equal(root.get("requestorEmpId"), loggedInUser));
+                predicates.add(cb.equal(root.get("approver"), loggedInUser));
             }
 
             if (filter.getRequestId() != null && !filter.getRequestId().isEmpty()) {
