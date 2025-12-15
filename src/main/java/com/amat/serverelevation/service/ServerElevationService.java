@@ -8,6 +8,7 @@ import com.amat.admanagement.dto.*;
 import com.amat.admanagement.service.ComputerService;
 import com.amat.admanagement.service.GroupsService;
 import com.amat.admanagement.service.UserService;
+import com.amat.approvalmanagement.enums.ApprovalStatus;
 import com.amat.serverelevation.DTO.getServerElevationRequests;
 import com.amat.serverelevation.DTO.*;
 import com.amat.serverelevation.entity.ApprovalDetails;
@@ -341,7 +342,7 @@ public class ServerElevationService {
                         .approverName(getOwnDisplayName(validation.getOwnerDetails().getOwnerEmpID()))
                         .workItemName(server + " (Duration: " + entry.getDurationInHours() + " Hours)")
                         .workItemType("SERVER-ELEVATION")
-                        .approvalStatus("Pending-Approval")
+                        .approvalStatus(ApprovalStatus.PENDING_APPROVAL.name())
                         .build();
 
                 approvalRepo.save(approval);

@@ -12,6 +12,9 @@ public class TokenValidationController {
 
     @GetMapping("/api/token/validate")
     public Map<String, Object> validateToken(@AuthenticationPrincipal Jwt jwt) {
+
+
+
         return Map.of(
                 "tokenValid", true,
                 "subject", jwt.getSubject(),

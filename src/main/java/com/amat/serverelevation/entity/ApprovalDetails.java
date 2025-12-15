@@ -1,6 +1,7 @@
 package com.amat.serverelevation.entity;
 
 
+import com.amat.approvalmanagement.enums.ApprovalStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -52,5 +53,9 @@ public class ApprovalDetails {
 
     @Column(columnDefinition = "nvarchar(max)")
     private String approverComment;
+
+    private int approvalLevel;
+
+    private LocalDateTime approvalDate;
 
 }

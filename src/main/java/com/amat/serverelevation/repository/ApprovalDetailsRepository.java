@@ -2,16 +2,50 @@ package com.amat.serverelevation.repository;
 
 
 
+import com.amat.approvalmanagement.enums.ApprovalStatus;
 import com.amat.serverelevation.entity.ApprovalDetails;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 @Repository
 public interface ApprovalDetailsRepository extends JpaRepository<ApprovalDetails, String> {
 
     List<ApprovalDetails> findByRequestIdInOrderByApprovalRequestDateDesc(List<String> requestIds);
+
+
+    Optional<ApprovalDetails> findByApprovalIdAndApproverAndApprovalStatus(
+            UUID approvalId,
+            String approver,
+            String status
+    );
+
+
+    List<ApprovalDetails> findByRequestIdAndApprovalLevelAndApprovalStatus(
+            String requestId,
+            int approvalLevel,
+            String status
+    );
+
+    List<ApprovalDetails>
+    findByRequestIdAndApprovalStatusAndApprovalLevelGreaterThan(
+            String requestId,
+            String status,
+            int approvalLevel
+    );
+
+
+    List<ApprovalDetails>
+    findByRequestIdAndApprovalStatusAndApprovalLevel(
+            String requestId,
+            String status,
+            int approvalLevel
+    );
+
+
 
 
 }

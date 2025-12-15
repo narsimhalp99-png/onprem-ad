@@ -28,8 +28,8 @@ public class ApprovalDetailsRequestSpecification {
             if (filter.getApproverName() != null && !filter.getApproverName().isEmpty()) {
                 predicates.add(cb.like(cb.lower(root.get("approverName")), "%" + filter.getApproverName().toLowerCase() + "%"));
             }
-            if (filter.getApprovalStatus() != null && !filter.getApprovalStatus().isEmpty()) {
-                predicates.add(cb.equal(root.get("approvalStatus"), filter.getApprovalStatus()));
+            if (filter.getApprovalStatus() != null && !filter.getApprovalStatus().name().isEmpty()) {
+                predicates.add(cb.equal(root.get("approvalStatus"), filter.getApprovalStatus().name()));
             }
             if (filter.getWorkItemType() != null && !filter.getWorkItemType().isEmpty()) {
                 predicates.add(cb.equal(root.get("workItemType"), filter.getWorkItemType()));

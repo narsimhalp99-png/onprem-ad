@@ -1,5 +1,6 @@
 package com.amat.approvalmanagement.dto;
 
+import com.amat.approvalmanagement.enums.ApprovalStatus;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 
@@ -10,7 +11,7 @@ public class ApprovalDetailsFilterDTO {
 
     private String requestId;
     private String approver;
-    private String approvalStatus;
+    private ApprovalStatus approvalStatus;
     private String workItemType;
     private String workItemName;
     private String approverName;

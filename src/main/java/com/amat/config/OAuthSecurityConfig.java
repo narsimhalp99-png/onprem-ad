@@ -16,8 +16,8 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.io.InputStream;
 
-@Configuration
-@EnableWebSecurity
+//@Configuration
+//@EnableWebSecurity
 public class OAuthSecurityConfig {
 
     @Bean
@@ -35,7 +35,7 @@ public class OAuthSecurityConfig {
 
     @Bean
     public JwtDecoder jwtDecoder() throws Exception {
-        try (InputStream certStream = getClass().getResourceAsStream("/certs/public.pem")) {
+        try (InputStream certStream = getClass().getResourceAsStream("certs/public.pem")) {
             CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
             X509Certificate certificate = (X509Certificate) certFactory.generateCertificate(certStream);
             RSAPublicKey publicKey = (RSAPublicKey) certificate.getPublicKey();
