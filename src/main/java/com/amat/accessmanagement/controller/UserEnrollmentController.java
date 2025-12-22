@@ -74,11 +74,11 @@ public class UserEnrollmentController {
     }
 
 
-    @PutMapping("/{employeeId}")
-    public ResponseEntity<UserEntity> updateUser(@PathVariable String employeeId,
-                                                 @RequestBody UserEntity user) {
-        return ResponseEntity.ok(svc.updateUser(employeeId, user));
-    }
+//    @PutMapping("/{employeeId}")
+//    public ResponseEntity<UserEntity> updateUser(@PathVariable String employeeId,
+//                                                 @RequestBody UserEntity user) {
+//        return ResponseEntity.ok(svc.updateUser(employeeId, user));
+//    }
 
     @PatchMapping("/{employeeId}")
     public ResponseEntity<?> updateUserInfo(
@@ -108,14 +108,22 @@ public class UserEnrollmentController {
     }
 
 
-    @PostMapping("/assign-role/{employeeId}")
-    public ResponseEntity<UserRoleMapping> assignRole(@PathVariable String employeeId,
-                                                      @RequestBody AssignRoleRequest req) {
+    @PostMapping("/{employeeId}/roles/assign")
+    public ResponseEntity<Map<String, Object>> assignRole(
+            @PathVariable String employeeId,
+            @RequestBody AssignRoleRequest req) {
+
         UserRoleMapping mapping = roleSvc.assignRole(employeeId, req);
-        return ResponseEntity.ok(mapping);
+
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(Map.of(
+                        "message", "Role assigned successfully"
+                ));
     }
 
-    @PatchMapping("/remove-role/{employeeId}")
+
+    @PatchMapping("/{employeeId}/roles/remove")
     public ResponseEntity<Void> revokeRole(@PathVariable String employeeId, @RequestBody AssignRoleRequest req) {
         roleSvc.revokeRole(employeeId, req.getRoleId());
         return ResponseEntity.noContent().build();

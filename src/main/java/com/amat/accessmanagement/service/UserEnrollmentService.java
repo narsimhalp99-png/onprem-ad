@@ -13,8 +13,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Map;
@@ -135,9 +137,19 @@ public class UserEnrollmentService {
     }
 
     public void deleteUser(String employeeId) {
-        UserEntity existing = getUser(employeeId,false);
-        userRepo.delete(existing);
+        UserEntity existing = getUser(employeeId, false); // already handles NOT_FOUND
+
+        try {
+            userRepo.delete(existing);
+            userRepo.flush();
+        } catch (Exception ex) {
+            throw new ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "User deletion failed for employeeId: " + employeeId
+            );
+        }
     }
+
 
     public void updateUserDetails(String employeeId, UserEntity update) {
 
