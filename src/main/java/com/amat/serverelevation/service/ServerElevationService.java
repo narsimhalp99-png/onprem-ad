@@ -1,6 +1,5 @@
 package com.amat.serverelevation.service;
 
-
 import com.amat.accessmanagement.entity.UserEntity;
 import com.amat.accessmanagement.repository.UserEnrollmentRepository;
 import com.amat.accessmanagement.service.RoleService;
@@ -21,8 +20,9 @@ import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
@@ -31,16 +31,9 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.*;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
-import org.springframework.security.access.AccessDeniedException;
-
-
 @Slf4j
 @Service
 public class ServerElevationService {
-
 
     @Autowired
     ComputerService computerService;
@@ -63,7 +56,6 @@ public class ServerElevationService {
     @Autowired
     RoleService roleService;
 
-
     @Autowired
     ServerElevationUtils utils;
 
@@ -73,9 +65,11 @@ public class ServerElevationService {
     @Value("${spring.ldap.base:''}")
     String defaultBase;
 
-
-
     public ServerElevationResponse validateRequest(ServerElevationRequestDTO request) {
+
+        log.info("START validateRequest | serverName={} | requestorEmpId={}",
+                request.getServerName(), request.getRequestorEmpId());
+
         ServerElevationResponse response = ServerElevationResponse.builder()
                 .serverName(request.getServerName())
                 .build();
@@ -88,20 +82,25 @@ public class ServerElevationService {
                 .pageSize(1)
                 .build();
 
+        log.debug("Fetching requestor from AD | employeeId={}", request.getRequestorEmpId());
+
         Map<String, Object> requestorResp = userService.fetchAllObjects(requestorReq);
-        List<Map<String, Object>> requestorData = (List<Map<String, Object>>) requestorResp.get("data");
+        List<Map<String, Object>> requestorData =
+                (List<Map<String, Object>>) requestorResp.get("data");
 
         if (requestorData == null || requestorData.isEmpty()) {
+            log.warn("USER_NOT_FOUND | employeeId={}", request.getRequestorEmpId());
             setError(response, "USER_NOT_FOUND");
             return response;
         }
 
         String requestorDn = (String) requestorData.get(0).get("distinguishedName");
-
         String userAdminDn = utils.fetchAdminAccountDn(requestorDn);
 
+        log.debug("Resolved DNs | requestorDn={} | adminDn={}", requestorDn, userAdminDn);
 
         if (userAdminDn == null || userAdminDn.isEmpty()) {
+            log.warn("USER_ADMIN_ACCOUNT_NOT_FOUND | requestorDn={}", requestorDn);
             setError(response, "USER_ADMIN_ACCOUNT_NOT_FOUND");
             return response;
         }
@@ -116,20 +115,25 @@ public class ServerElevationService {
                 .addtnlAttributes(List.of("facsimileTelephoneNumber", "userAccountControl", "operatingSystem"))
                 .build();
 
+        log.debug("Fetching computer from AD | serverName={}", request.getServerName());
+
         Map<String, Object> computerResult = computerService.fetchAllObjects(computerReq);
-        List<Map<String, Object>> computers = (List<Map<String, Object>>) computerResult.get("data");
+        List<Map<String, Object>> computers =
+                (List<Map<String, Object>>) computerResult.get("data");
 
         if (computers == null || computers.isEmpty()) {
+            log.warn("SERVER_NOT_FOUND | serverName={}", request.getServerName());
             setError(response, "SERVER_NOT_FOUND");
             return response;
         }
 
         Map<String, Object> computer = computers.get(0);
         response.setOperatingSystem((String) computer.get("operatingSystem"));
-        response.setApplicationName((String) computer.get("facsimileTelephoneNumber")); // Or derive if needed
+        response.setApplicationName((String) computer.get("facsimileTelephoneNumber"));
 
         // Step 2 & 3: Find Admin Group
         String adminGroup = request.getServerName() + "-APP-ADMINS";
+
         GroupsRequest groupReq = GroupsRequest.builder()
                 .searchBaseOU(defaultBase)
                 .filter("(cn=" + adminGroup + ")")
@@ -138,10 +142,14 @@ public class ServerElevationService {
                 .pageSize(1)
                 .build();
 
+        log.debug("Fetching admin group | groupName={}", adminGroup);
+
         Map<String, Object> groupResult = groupsService.fetchAllGroups(groupReq);
-        List<Map<String, Object>> groups = (List<Map<String, Object>>) groupResult.get("data");
+        List<Map<String, Object>> groups =
+                (List<Map<String, Object>>) groupResult.get("data");
 
         if (groups == null || groups.isEmpty()) {
+            log.warn("SERVER_OWNER_NOT_FOUND | group={}", adminGroup);
             setError(response, "SERVER_OWNER_NOT_FOUND");
             return response;
         }
@@ -157,10 +165,14 @@ public class ServerElevationService {
                 .pageSize(1)
                 .build();
 
+        log.debug("Fetching owner info | ownerDn={}", ownerDn);
+
         Map<String, Object> userResult = userService.fetchAllObjects(userReq);
-        List<Map<String, Object>> users = (List<Map<String, Object>>) userResult.get("data");
+        List<Map<String, Object>> users =
+                (List<Map<String, Object>>) userResult.get("data");
 
         if (users == null || users.isEmpty()) {
+            log.warn("OWNER_NOT_FOUND | ownerDn={}", ownerDn);
             setError(response, "OWNER_NOT_FOUND");
             return response;
         }
@@ -174,6 +186,7 @@ public class ServerElevationService {
 
         // Step 5: Check Local Admin Membership
         String localAdminGroup = request.getServerName() + "-Local-Admins";
+
         GroupsRequest localGroupReq = GroupsRequest.builder()
                 .searchBaseOU(defaultBase)
                 .filter("(cn=" + localAdminGroup + ")")
@@ -183,16 +196,17 @@ public class ServerElevationService {
                 .pageSize(1)
                 .build();
 
+        log.debug("Fetching local admin group | groupName={}", localAdminGroup);
+
         Map<String, Object> localGroupResult = groupsService.fetchAllGroups(localGroupReq);
-        List<Map<String, Object>> localGroups = (List<Map<String, Object>>) localGroupResult.get("data");
+        List<Map<String, Object>> localGroups =
+                (List<Map<String, Object>>) localGroupResult.get("data");
 
         if (localGroups == null || localGroups.isEmpty()) {
+            log.warn("ELEVATION_GROUP_NOT_FOUND | group={}", localAdminGroup);
             setError(response, "ELEVATION_GROUP_NOT_FOUND");
             return response;
         }
-
-        // TODO Single item, string , multiple -> List coming
-//        List<String> members = (List<String>) localGroups.get(0).get("member");
 
         Object memberObj = localGroups.get(0).get("member");
 
@@ -201,8 +215,8 @@ public class ServerElevationService {
                         ? (List<String>) memberObj
                         : Collections.singletonList(String.valueOf(memberObj));
 
-
         if (members != null && members.contains(request.getRequestorEmpId())) {
+            log.warn("USER_ALREADY_ELEVATED | employeeId={}", request.getRequestorEmpId());
             setError(response, "USER_ALREADY_ELEVATED");
             return response;
         }
@@ -218,35 +232,38 @@ public class ServerElevationService {
                     .fetchRecursiveMembers(false)
                     .build();
 
-            Map<String, Object> recursiveGroupResult = groupsService.fetchAllGroups(recursiveGroupReq);
+        log.debug("Checking approval requirement | adminGroup={}", adminGroup);
 
-            List<Map<String, Object>> recursiveGroupResultData = (List<Map<String, Object>>) recursiveGroupResult.get("data");
+        Map<String, Object> recursiveGroupResult = groupsService.fetchAllGroups(recursiveGroupReq);
+        List<Map<String, Object>> recursiveGroupResultData =
+                (List<Map<String, Object>>) recursiveGroupResult.get("data");
 
-            // Collect all members from all results
-            List<String> allRecursiveMembers = new ArrayList<>();
+        List<String> allRecursiveMembers = new ArrayList<>();
 
-            for (Map<String, Object> groupData : recursiveGroupResultData) {
-                Object memberObj2 = groupData.get("member");
-
-                if (memberObj2 instanceof List) {
-                    allRecursiveMembers.addAll((List<String>) memberObj2);
-
-                } else if (memberObj2 instanceof String) {
-                    allRecursiveMembers.add((String) memberObj2);
-
-                } else if (memberObj2 != null) {
-                    allRecursiveMembers.add(memberObj2.toString());
-                }
+        for (Map<String, Object> groupData : recursiveGroupResultData) {
+            Object memberObj2 = groupData.get("member");
+            if (memberObj2 instanceof List) {
+                allRecursiveMembers.addAll((List<String>) memberObj2);
+            } else if (memberObj2 instanceof String) {
+                allRecursiveMembers.add((String) memberObj2);
+            } else if (memberObj2 != null) {
+                allRecursiveMembers.add(memberObj2.toString());
             }
+        }
 
+        boolean isMemberOfAdminGroup = allRecursiveMembers.contains(userAdminDn);
+        response.setApprovalRequired(!isMemberOfAdminGroup);
 
-            boolean isMemberOfAdminGroup = allRecursiveMembers.contains(userAdminDn);
-            response.setApprovalRequired(!isMemberOfAdminGroup);
+        log.info("END validateRequest | server={} | eligible={} | approvalRequired={}",
+                request.getServerName(),
+                response.getEligibleForElevation(),
+                response.getApprovalRequired());
 
         return response;
     }
 
     private void setError(ServerElevationResponse response, String errorMsg) {
+        log.warn("Validation failed | error={}", errorMsg);
         response.setEligibleForElevation(false);
         response.setEligibleForElevationMsg(errorMsg);
     }
@@ -254,13 +271,20 @@ public class ServerElevationService {
     @Async
     @Transactional
     public void submitElevationRequest(String employeeId, SubmitElevationRequest request) {
+
+        log.info("START submitElevationRequest | employeeId={} | servers={}",
+                employeeId, request.getEligibleServers().size());
+
         List<SubmitResponse> results = new ArrayList<>();
 
         String userDn = utils.fetchUserDn(employeeId);
         String userAdminDn = utils.fetchAdminAccountDn(userDn);
 
         for (SubmitServerEntry entry : request.getEligibleServers()) {
+
             String server = entry.getServerName();
+            log.info("Processing server elevation | server={}", server);
+
             ServerElevationRequestDTO validateReq = ServerElevationRequestDTO.builder()
                     .serverName(server)
                     .requestorEmpId(employeeId)
@@ -270,7 +294,10 @@ public class ServerElevationService {
             ServerElevationResponse validation = validateRequest(validateReq);
 
             if (!Boolean.TRUE.equals(validation.getEligibleForElevation())) {
-                results.add(new SubmitResponse(server, "Failed", null, null, validation.getEligibleForElevationMsg()));
+                log.warn("Server not eligible | server={} | reason={}",
+                        server, validation.getEligibleForElevationMsg());
+                results.add(new SubmitResponse(server, "Failed", null, null,
+                        validation.getEligibleForElevationMsg()));
                 continue;
             }
 
@@ -285,9 +312,10 @@ public class ServerElevationService {
                     .status("In-Progress")
                     .build();
 
-            ServerElevationRequest savedServerEntity =  serverRepo.save(entity);
-
+            ServerElevationRequest savedServerEntity = serverRepo.save(entity);
             String requestId = savedServerEntity.getRequestId();
+
+            log.info("Request saved | server={} | requestId={}", server, requestId);
 
             if (!Boolean.TRUE.equals(validation.getApprovalRequired())) {
                 // No approval: try immediate elevation
@@ -358,19 +386,22 @@ public class ServerElevationService {
             }
         }
 
-        log.info("results list::{}", results);
-
+        log.info("END submitElevationRequest | results={}", results);
     }
 
-
     public Object getRequests(getServerElevationRequests serverEleReq,
-                                                    String loggedInUser,
-                                                    boolean isSelf,
-                                                    Pageable pageable) {
+                              String loggedInUser,
+                              boolean isSelf,
+                              Pageable pageable) {
+
+        log.info("START getRequests | user={} | isSelf={}", loggedInUser, isSelf);
 
         if (!isSelf) {
             boolean isAdmin = roleService.hasRole(loggedInUser, "ServerElevation-Administrator");
+            log.debug("Admin check | user={} | isAdmin={}", loggedInUser, isAdmin);
+
             if (!isAdmin) {
+                log.warn("Access denied | user={}", loggedInUser);
                 return ResponseEntity
                         .status(HttpStatus.FORBIDDEN)
                         .body(Map.of(
@@ -380,11 +411,15 @@ public class ServerElevationService {
             }
         }
 
-        if(serverEleReq.getFilter().getRequestorName()!=null && !serverEleReq.getFilter().getRequestorName().isBlank()){
-            loggedInUser = serverEleReq.getFilter().getRequestorName();
-            isSelf=true;
-        }
+        if (serverEleReq.getFilter().getRequestorName() != null
+                && !serverEleReq.getFilter().getRequestorName().isBlank()) {
 
+            log.debug("Requestor override | originalUser={} | overriddenUser={}",
+                    loggedInUser, serverEleReq.getFilter().getRequestorName());
+
+            loggedInUser = serverEleReq.getFilter().getRequestorName();
+            isSelf = true;
+        }
 
         Specification<ServerElevationRequest> spec =
                 ServerElevationRequestSpecification.applyFilters(serverEleReq, loggedInUser, isSelf);
@@ -404,42 +439,46 @@ public class ServerElevationService {
     }
 
     private String getOwnDisplayName(String ownerEmpId) {
+        log.debug("Fetching displayName | ownerEmpId={}", ownerEmpId);
         return userEnrollmentRepository.findById(ownerEmpId)
                 .map(UserEntity::getDisplayName)
                 .orElse("");
     }
 
-
     @Transactional
-    public void performPostApprovalDenyActionServerElevation(String loggedInUser,String requestId) {
+    public void performPostApprovalDenyActionServerElevation(String loggedInUser, String requestId) {
 
+        log.info("START performPostApprovalDenyActionServerElevation | requestId={} | user={}",
+                requestId, loggedInUser);
         // 1. Fetch server elevation request
         ServerElevationRequest req = serverElevationRequestRepository.findByRequestId(requestId)
                 .orElseThrow(() -> new IllegalStateException("Server elevation request not found: " + requestId));
 
         String server = req.getServerName();
         String requestee = req.getRequestedBy();
-
         // 2. Resolve admin account DN
+        log.debug("Resolved request | server={} | requestee={}", server, requestee);
 
         String userDn = utils.fetchUserDn(loggedInUser);
+        log.info("Adding to ADMINS-GROUPS | userDn={}", userDn);
         String userAdminDn = utils.fetchAdminAccountDn(userDn);
-
+        log.info("Adding to APP-GROUPS | userAdminDn={}", userAdminDn);
         boolean appAdminSuccess = false;
         boolean localAdminSuccess = false;
         String errorMsg = null;
 
         try {
-            // Add to SERVER-APP-ADMINS
-            String appAdminsGroupDn = utils.fetchGroupDn(server + "-APP-ADMINS");
+            log.info("Adding to APP-ADMINS | server={}", server);
 
+            String appAdminsGroupDn = utils.fetchGroupDn(server + "-APP-ADMINS");
+            log.info("Adding to APP-ADMINS | appAdminsGroupDn={}", appAdminsGroupDn);
             ManageGroupRequest appAdminReq = new ManageGroupRequest();
             appAdminReq.setGroupDn(appAdminsGroupDn);
             appAdminReq.setUserDns(List.of(userAdminDn));
             appAdminReq.setOperation("ADD");
 
             ModifyGroupResponse appResp = groupsService.modifyGroupMembers(appAdminReq);
-
+            log.info("Adding to APP-ADMINS | addToAppAdminsResp={}", appResp);
             if ("200".equals(appResp.getStatusCode())
                     || "success".equalsIgnoreCase(appResp.getStatusCode())) {
                 appAdminSuccess = true;
@@ -447,40 +486,44 @@ public class ServerElevationService {
                 errorMsg = String.join(", ", appResp.getErrors());
             }
 
-
-            // Add to SERVER-LOCAL-ADMINS
             if (appAdminSuccess) {
-                String localAdminsGroupDn = utils.fetchGroupDn(server + "-LOCAL-ADMINS");
 
+                log.info("Adding to LOCAL-ADMINS | server={}", server);
+
+                String localAdminsGroupDn = utils.fetchGroupDn(server + "-LOCAL-ADMINS");
+                log.info("Adding to LOCAL-ADMINS | localAdminsGroupDn={}", appAdminsGroupDn);
                 ManageGroupRequest localAdminReq = new ManageGroupRequest();
                 localAdminReq.setGroupDn(localAdminsGroupDn);
                 localAdminReq.setUserDns(List.of(userAdminDn));
                 localAdminReq.setOperation("ADD");
 
                 ModifyGroupResponse localResp = groupsService.modifyGroupMembers(localAdminReq);
-
+                log.info("Adding to APP-ADMINS | addToLocalAdminsResp={}", localResp);
                 if ("200".equals(localResp.getStatusCode())
                         || "success".equalsIgnoreCase(localResp.getStatusCode())) {
                     localAdminSuccess = true;
-
+                    log.info("Updating server elevation table::Start");
                     serverElevationRequestRepository.findByRequestId(requestId).ifPresent(serReq -> {
                         serReq.setElevationStatus("Success");
                         serReq.setElevationTime(LocalDateTime.now());
                         serReq.setElevationStatusMessage("Elevated Successfully");
                         serReq.setStatus(ApprovalStatus.In_Progress.name());
                     });
+                    log.info("Updating server elevation table::Done");
                 } else {
                     errorMsg = String.join(", ", localResp.getErrors());
                 }
             }
 
         } catch (Exception ex) {
-            log.error("Post-approval elevation failed for requestId {}: {}", requestId, ex.getMessage(), ex);
+            log.error("Post-approval elevation failed | requestId={} | error={}",
+                    requestId, ex.getMessage(), ex);
             errorMsg = ex.getMessage();
         }
 
-
         if (appAdminSuccess && localAdminSuccess) {
+
+            log.info("Post-approval elevation success | requestId={}", requestId);
 
             serverRepo.updateOnSuccess(
                     requestId,
@@ -490,9 +533,10 @@ public class ServerElevationService {
                     "Completed"
             );
 
-            // Elevation service success email
-
         } else {
+
+            log.warn("Post-approval elevation failed | requestId={} | error={}",
+                    requestId, errorMsg);
 
             serverRepo.updateOnFailure(
                     requestId,
@@ -500,9 +544,9 @@ public class ServerElevationService {
                     errorMsg != null ? errorMsg : "Group assignment failed",
                     "Completed"
             );
-
-            // Elevation service Failure Email
         }
+
+        log.info("END performPostApprovalDenyActionServerElevation | requestId={}", requestId);
     }
 
 }

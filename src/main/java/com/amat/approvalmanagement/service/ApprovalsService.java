@@ -1,7 +1,5 @@
 package com.amat.approvalmanagement.service;
 
-
-
 import com.amat.accessmanagement.service.RoleService;
 import com.amat.admanagement.dto.ManageGroupRequest;
 import com.amat.admanagement.dto.ModifyGroupResponse;
@@ -28,17 +26,14 @@ import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.transaction.annotation.Transactional;
 
-
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-
 @Slf4j
 @Service
 public class ApprovalsService {
-
 
     @Autowired
     ApprovalDetailsFilterRepository approvalRepo;
@@ -52,7 +47,6 @@ public class ApprovalsService {
     @Autowired
     ServerElevationRepository serverRepo;
 
-
     @Autowired
     RoleService roleService;
 
@@ -65,12 +59,20 @@ public class ApprovalsService {
     @Autowired
     ServerElevationService serverElevationService;
 
-
     public Object getApprovalDetails(ApprovalDetailsFilterDTO filter, int page, int size, String loggedInUser, boolean isSelf) {
 
+        log.info(
+                "START getApprovalDetails | user={} | page={} | size={} | isSelf={} | filter={}",
+                loggedInUser, page, size, isSelf, filter
+        );
+
         if (!isSelf) {
+            log.debug("Non-self request detected, validating admin role | user={}", loggedInUser);
             boolean isAdmin = roleService.hasRole(loggedInUser, "Approval-Administrator");
+            log.debug("Admin role validation result | user={} | isAdmin={}", loggedInUser, isAdmin);
+
             if (!isAdmin) {
+                log.warn("Access denied for user={} while fetching approval details", loggedInUser);
                 return ResponseEntity
                         .status(HttpStatus.FORBIDDEN)
                         .body(Map.of(
@@ -80,68 +82,138 @@ public class ApprovalsService {
             }
         }
 
-        if(filter.getApprover()!=null && !filter.getApprover().isBlank()){
+        if (filter.getApprover() != null && !filter.getApprover().isBlank()) {
+            log.debug(
+                    "Approver override detected | originalUser={} | overriddenUser={}",
+                    loggedInUser,
+                    filter.getApprover()
+            );
             loggedInUser = filter.getApprover();
-            isSelf=true;
+            isSelf = true;
         }
 
-
-        String validSortField = (filter.getSortField() != null && !filter.getSortField() .isEmpty())
+        String validSortField = (filter.getSortField() != null && !filter.getSortField().isEmpty())
                 ? filter.getSortField()
                 : "approvalRequestDate";
 
-        Sort.Direction direction = (filter.getSortDirection()  != null && filter.getSortDirection().equalsIgnoreCase("desc"))
+        Sort.Direction direction = (filter.getSortDirection() != null && filter.getSortDirection().equalsIgnoreCase("desc"))
                 ? Sort.Direction.DESC
                 : Sort.Direction.ASC;
 
+        log.debug(
+                "Pagination & sorting resolved | sortField={} | direction={} | page={} | size={}",
+                validSortField, direction, page, size
+        );
+
         Pageable pageable = PageRequest.of(page, size, Sort.by(direction, validSortField));
 
+        Specification<ApprovalDetails> spec =
+                ApprovalDetailsRequestSpecification.applyFilters(filter, loggedInUser, isSelf);
 
-        Specification<ApprovalDetails> spec = ApprovalDetailsRequestSpecification.applyFilters(filter, loggedInUser, isSelf);
+        log.debug("Specification built successfully | user={} | isSelf={}", loggedInUser, isSelf);
 
+        Object response = approvalRepo.findAll(spec, pageable);
 
-        return approvalRepo.findAll(spec, pageable);
+        log.info("END getApprovalDetails | user={} | resultReturned", loggedInUser);
+
+        return response;
     }
-
 
     @Transactional
     public void approveOrReject(ApprovalActionRequest req, String loggedInUser) {
+
+        log.info(
+                "START approveOrReject | approvalId={} | action={} | user={}",
+                req.getApprovalId(),
+                req.getAction(),
+                loggedInUser
+        );
+
         ApprovalDetails approval = new ApprovalDetails();
+
         Optional<ApprovalDetails> approvals =
                 approvalDetailsRepository.findByApprovalIdAndApproverAndApprovalStatus(
                         req.getApprovalId(),
                         loggedInUser,
                         ApprovalStatus.Pending_Approval.name()
                 );
+
+        log.debug(
+                "Fetched approval record | approvalId={} | present={}",
+                req.getApprovalId(),
+                approvals.isPresent()
+        );
+
         String requestedBy = "";
-        if (approvals.isPresent()){
+
+        if (approvals.isPresent()) {
             approval = approvals.get();
             int level = approval.getApprovalLevel();
             String requestId = approval.getRequestId();
 
-            // Update current approval
+            log.debug(
+                    "Approval context resolved | requestId={} | level={} | workItemType={}",
+                    requestId,
+                    level,
+                    approval.getWorkItemType()
+            );
+
             approval.setApprovalDate(LocalDateTime.now());
             approval.setApprovalStatus(req.isApprove()
                     ? ApprovalStatus.Approved.name()
                     : ApprovalStatus.Denied.name());
             approval.setApproverComment(req.getComment());
 
-            Optional<ServerElevationRequest> serverElevationRequest = serverElevationRequestRepository.findByRequestId(requestId);
+            log.info(
+                    "Approval updated | requestId={} | level={} | status={}",
+                    requestId,
+                    level,
+                    approval.getApprovalStatus()
+            );
+
+            Optional<ServerElevationRequest> serverElevationRequest =
+                    serverElevationRequestRepository.findByRequestId(requestId);
+
             requestedBy = serverElevationRequest
                     .map(ServerElevationRequest::getRequestedBy)
                     .orElse("");
 
+            log.debug(
+                    "Resolved requestedBy user | requestId={} | requestedBy={}",
+                    requestId,
+                    requestedBy
+            );
 
-            // Mark parallel approvals
             markParallelApprovals(requestId, level, requestedBy, req.getAction());
-
         }
 
         if (req.isApprove()) {
-            handleNextLevelOrPostAction(requestedBy,approval.getRequestId(), approval.getApprovalLevel(),  approval.getWorkItemType());
+            log.info(
+                    "Handling next approval level or post-action | requestId={} | level={}",
+                    approval.getRequestId(),
+                    approval.getApprovalLevel()
+            );
+            handleNextLevelOrPostAction(
+                    requestedBy,
+                    approval.getRequestId(),
+                    approval.getApprovalLevel(),
+                    approval.getWorkItemType()
+            );
         } else {
+            log.info(
+                    "Cancelling future approvals | requestId={} | level={}",
+                    approval.getRequestId(),
+                    approval.getApprovalLevel()
+            );
             cancelFutureApprovals(approval.getRequestId(), approval.getApprovalLevel());
         }
+
+        log.info(
+                "END approveOrReject | approvalId={} | action={} | user={}",
+                req.getApprovalId(),
+                req.getAction(),
+                loggedInUser
+        );
     }
 
     private void markParallelApprovals(
@@ -150,16 +222,36 @@ public class ApprovalsService {
             String user,
             String action) {
 
+        log.debug(
+                "START markParallelApprovals | requestId={} | level={} | action={}",
+                requestId,
+                level,
+                action
+        );
+
         List<ApprovalDetails> approvals =
                 approvalDetailsRepository.findByRequestIdAndApprovalLevelAndApprovalStatus(
                         requestId,
                         level,
-                        ApprovalStatus.Pending_Approval.name());
+                        ApprovalStatus.Pending_Approval.name()
+                );
+
+        log.debug(
+                "Parallel approvals found | requestId={} | count={}",
+                requestId,
+                approvals.size()
+        );
 
         approvals.forEach(a -> {
             a.setApprovalStatus("Not-Required");
             a.setApproverComment(action + " by " + user);
         });
+
+        log.info(
+                "END markParallelApprovals | requestId={} | updatedCount={}",
+                requestId,
+                approvals.size()
+        );
     }
 
     private void handleNextLevelOrPostAction(
@@ -168,43 +260,103 @@ public class ApprovalsService {
             int level,
             String workItemType) {
 
+        log.debug(
+                "START handleNextLevelOrPostAction | requestId={} | level={} | workItemType={}",
+                requestId,
+                level,
+                workItemType
+        );
+
         List<ApprovalDetails> next =
                 approvalDetailsRepository.findByRequestIdAndApprovalStatusAndApprovalLevel(
                         requestId,
                         "Not-Started",
-                        level + 1);
+                        level + 1
+                );
+
+        log.debug(
+                "Next level approvals fetched | requestId={} | nextLevel={} | count={}",
+                requestId,
+                level + 1,
+                next.size()
+        );
 
         if (!next.isEmpty()) {
             next.forEach(a ->
                     a.setApprovalStatus(ApprovalStatus.Pending_Approval.name()));
+            log.info(
+                    "Next level approvals activated | requestId={} | level={}",
+                    requestId,
+                    level + 1
+            );
         } else {
-            performPostApprovalAction(loggedInUser,requestId, workItemType);
+            log.info(
+                    "No further approval levels found, performing post-approval action | requestId={}",
+                    requestId
+            );
+            performPostApprovalAction(loggedInUser, requestId, workItemType);
         }
+
+        log.debug(
+                "END handleNextLevelOrPostAction | requestId={}",
+                requestId
+        );
     }
 
     private void cancelFutureApprovals(String requestId, int level) {
+
+        log.debug(
+                "START cancelFutureApprovals | requestId={} | fromLevel={}",
+                requestId,
+                level
+        );
 
         List<ApprovalDetails> future =
                 approvalDetailsRepository.findByRequestIdAndApprovalStatusAndApprovalLevelGreaterThan(
                         requestId,
                         "Not-Started",
-                        level);
+                        level
+                );
+
+        log.debug(
+                "Future approvals found | requestId={} | count={}",
+                requestId,
+                future.size()
+        );
 
         future.forEach(a -> {
             a.setApprovalStatus(ApprovalStatus.Cancelled.name());
             a.setApproverComment("Not-Required");
         });
+
+        log.info(
+                "Future approvals cancelled | requestId={} | cancelledCount={}",
+                requestId,
+                future.size()
+        );
     }
 
-    private void performPostApprovalAction(String loggedInUser,String requestId, String workItemType) {
+    private void performPostApprovalAction(String loggedInUser, String requestId, String workItemType) {
+
+        log.info(
+                "START performPostApprovalAction | requestId={} | workItemType={} | user={}",
+                requestId,
+                workItemType,
+                loggedInUser
+        );
 
         if ("SERVER-ELEVATION".equalsIgnoreCase(workItemType)) {
-            serverElevationService.performPostApprovalDenyActionServerElevation(loggedInUser,requestId);
-
+            serverElevationService.performPostApprovalDenyActionServerElevation(loggedInUser, requestId);
+            log.info(
+                    "Post approval action executed for SERVER-ELEVATION | requestId={}",
+                    requestId
+            );
         }
+
+        log.info(
+                "END performPostApprovalAction | requestId={}",
+                requestId
+        );
     }
 
-
-
 }
-
