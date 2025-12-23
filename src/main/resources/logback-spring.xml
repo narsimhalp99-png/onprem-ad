@@ -1,19 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
 
-    <!-- Log directory -->
     <property name="LOG_DIR" value="C:/logs/myidcustomapi"/>
 
-    <!-- Console appender (optional) -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
 
-    <!-- File appender -->
-    <appender name="FILE"
-              class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${LOG_DIR}/application.log</file>
 
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
@@ -26,10 +22,8 @@
         </encoder>
     </appender>
 
-    <!-- Root logger -->
     <root level="INFO">
         <appender-ref ref="FILE"/>
-        <!-- optional -->
         <appender-ref ref="CONSOLE"/>
     </root>
 

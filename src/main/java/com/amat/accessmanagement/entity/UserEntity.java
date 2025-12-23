@@ -27,6 +27,13 @@ public class UserEntity {
     private Long managerEmpId;
     private Boolean isActive;
 
+    @Column(
+            nullable = false,
+            updatable = false,
+            insertable = false,
+            columnDefinition =
+                    "DATETIMEOFFSET DEFAULT SYSDATETIMEOFFSET()"
+    )
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
 
@@ -47,11 +54,6 @@ public class UserEntity {
     private String regularAccountDN;
 
 
-
-    @PrePersist
-    public void prePersist() {
-        createdAt = OffsetDateTime.now();
-    }
 
     @PreUpdate
     public void preUpdate() {

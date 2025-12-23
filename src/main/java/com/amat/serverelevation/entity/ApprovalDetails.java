@@ -54,6 +54,11 @@ public class ApprovalDetails {
     @Column(columnDefinition = "nvarchar(max)")
     private String approverComment;
 
+    @Column(
+            nullable = false,
+            insertable = false,
+            columnDefinition = "int default 1"
+    )
     private int approvalLevel;
 
     private LocalDateTime approvalDate;

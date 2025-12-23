@@ -2,9 +2,10 @@ package com.amat.approvalmanagement.enums;
 
 public enum ApprovalStatus {
     NOT_STARTED,
-    PENDING_APPROVAL,
-    APPROVED,
-    DENIED,
+    Pending_Approval,
+    Approved,
+    Denied,
     NOT_REQUIRED,
-    CANCELLED
+    Cancelled,
+    In_Progress
 }

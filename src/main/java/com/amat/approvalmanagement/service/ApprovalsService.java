@@ -15,6 +15,7 @@ import com.amat.serverelevation.entity.ServerElevationRequest;
 import com.amat.serverelevation.repository.ApprovalDetailsRepository;
 import com.amat.serverelevation.repository.ServerElevationRepository;
 import com.amat.serverelevation.repository.ServerElevationRequestRepository;
+import com.amat.serverelevation.service.ServerElevationService;
 import com.amat.serverelevation.util.ServerElevationUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -60,6 +61,9 @@ public class ApprovalsService {
 
     @Autowired
     GroupsService groupsService;
+
+    @Autowired
+    ServerElevationService serverElevationService;
 
 
     public Object getApprovalDetails(ApprovalDetailsFilterDTO filter, int page, int size, String loggedInUser, boolean isSelf) {
@@ -107,9 +111,9 @@ public class ApprovalsService {
                 approvalDetailsRepository.findByApprovalIdAndApproverAndApprovalStatus(
                         req.getApprovalId(),
                         loggedInUser,
-                        "Pending-Approval"
+                        ApprovalStatus.Pending_Approval.name()
                 );
-
+        String requestedBy = "";
         if (approvals.isPresent()){
             approval = approvals.get();
             int level = approval.getApprovalLevel();
@@ -118,15 +122,23 @@ public class ApprovalsService {
             // Update current approval
             approval.setApprovalDate(LocalDateTime.now());
             approval.setApprovalStatus(req.isApprove()
-                    ? ApprovalStatus.APPROVED.name()
-                    : ApprovalStatus.DENIED.name());
+                    ? ApprovalStatus.Approved.name()
+                    : ApprovalStatus.Denied.name());
             approval.setApproverComment(req.getComment());
+
+            Optional<ServerElevationRequest> serverElevationRequest = serverElevationRequestRepository.findByRequestId(requestId);
+            requestedBy = serverElevationRequest
+                    .map(ServerElevationRequest::getRequestedBy)
+                    .orElse("");
+
+
             // Mark parallel approvals
-            markParallelApprovals(requestId, level, loggedInUser, req.getAction());
+            markParallelApprovals(requestId, level, requestedBy, req.getAction());
+
         }
 
         if (req.isApprove()) {
-            handleNextLevelOrPostAction(loggedInUser,approval.getRequestId(), approval.getApprovalLevel(),  approval.getWorkItemType());
+            handleNextLevelOrPostAction(requestedBy,approval.getRequestId(), approval.getApprovalLevel(),  approval.getWorkItemType());
         } else {
             cancelFutureApprovals(approval.getRequestId(), approval.getApprovalLevel());
         }
@@ -142,7 +154,7 @@ public class ApprovalsService {
                 approvalDetailsRepository.findByRequestIdAndApprovalLevelAndApprovalStatus(
                         requestId,
                         level,
-                        "Pending-Approval");
+                        ApprovalStatus.Pending_Approval.name());
 
         approvals.forEach(a -> {
             a.setApprovalStatus("Not-Required");
@@ -164,7 +176,7 @@ public class ApprovalsService {
 
         if (!next.isEmpty()) {
             next.forEach(a ->
-                    a.setApprovalStatus("Pending-Approval"));
+                    a.setApprovalStatus(ApprovalStatus.Pending_Approval.name()));
         } else {
             performPostApprovalAction(loggedInUser,requestId, workItemType);
         }
@@ -179,7 +191,7 @@ public class ApprovalsService {
                         level);
 
         future.forEach(a -> {
-            a.setApprovalStatus(ApprovalStatus.CANCELLED.name());
+            a.setApprovalStatus(ApprovalStatus.Cancelled.name());
             a.setApproverComment("Not-Required");
         });
     }
@@ -187,102 +199,11 @@ public class ApprovalsService {
     private void performPostApprovalAction(String loggedInUser,String requestId, String workItemType) {
 
         if ("SERVER-ELEVATION".equalsIgnoreCase(workItemType)) {
-            performPostApprovalDenyActionServerElevation(loggedInUser,requestId);
-            serverElevationRequestRepository.findByRequestId(requestId).ifPresent(req -> {
-                req.setElevationStatus("Success");
-                req.setElevationTime(LocalDateTime.now());
-                req.setElevationStatusMessage("Elevated Successfully");
-            });
+            serverElevationService.performPostApprovalDenyActionServerElevation(loggedInUser,requestId);
+
         }
     }
 
-    @Transactional
-    private void performPostApprovalDenyActionServerElevation(String loggedInUser,String requestId) {
-
-        // 1. Fetch server elevation request
-        ServerElevationRequest req = serverElevationRequestRepository.findByRequestId(requestId)
-                .orElseThrow(() -> new IllegalStateException("Server elevation request not found: " + requestId));
-
-        String server = req.getServerName();
-        String requestee = req.getRequestedBy();
-
-        // 2. Resolve admin account DN
-
-        String userDn = utils.fetchUserDn(loggedInUser);
-        String userAdminDn = utils.fetchAdminAccountDn(userDn);
-
-        boolean appAdminSuccess = false;
-        boolean localAdminSuccess = false;
-        String errorMsg = null;
-
-        try {
-            // Add to SERVER-APP-ADMINS
-            String appAdminsGroupDn = utils.fetchGroupDn(server + "-APP-ADMINS");
-
-            ManageGroupRequest appAdminReq = new ManageGroupRequest();
-            appAdminReq.setGroupDn(appAdminsGroupDn);
-            appAdminReq.setUserDns(List.of(userAdminDn));
-            appAdminReq.setOperation("ADD");
-
-            ModifyGroupResponse appResp = groupsService.modifyGroupMembers(appAdminReq);
-
-            if ("200".equals(appResp.getStatusCode())
-                    || "success".equalsIgnoreCase(appResp.getStatusCode())) {
-                appAdminSuccess = true;
-            } else {
-                errorMsg = String.join(", ", appResp.getErrors());
-            }
-
-
-            // Add to SERVER-LOCAL-ADMINS
-            if (appAdminSuccess) {
-                String localAdminsGroupDn = utils.fetchGroupDn(server + "-LOCAL-ADMINS");
-
-                ManageGroupRequest localAdminReq = new ManageGroupRequest();
-                localAdminReq.setGroupDn(localAdminsGroupDn);
-                localAdminReq.setUserDns(List.of(userAdminDn));
-                localAdminReq.setOperation("ADD");
-
-                ModifyGroupResponse localResp = groupsService.modifyGroupMembers(localAdminReq);
-
-                if ("200".equals(localResp.getStatusCode())
-                        || "success".equalsIgnoreCase(localResp.getStatusCode())) {
-                    localAdminSuccess = true;
-                } else {
-                    errorMsg = String.join(", ", localResp.getErrors());
-                }
-            }
-
-        } catch (Exception ex) {
-            log.error("Post-approval elevation failed for requestId {}: {}", requestId, ex.getMessage(), ex);
-            errorMsg = ex.getMessage();
-        }
-
-
-        if (appAdminSuccess && localAdminSuccess) {
-
-            serverRepo.updateOnSuccess(
-                    requestId,
-                    LocalDateTime.now(),
-                    "Approved",
-                    "Admin access granted",
-                    "Completed"
-            );
-
-           // Elevation service success email
-
-        } else {
-
-            serverRepo.updateOnFailure(
-                    requestId,
-                    "Failed",
-                    errorMsg != null ? errorMsg : "Group assignment failed",
-                    "Completed"
-            );
-
-            // Elevation service Failure Email
-        }
-    }
 
 
 }
