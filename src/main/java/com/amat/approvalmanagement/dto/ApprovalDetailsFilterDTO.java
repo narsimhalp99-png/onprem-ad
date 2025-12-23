@@ -11,7 +11,7 @@ public class ApprovalDetailsFilterDTO {
 
     private String requestId;
     private String approver;
-    private ApprovalStatus approvalStatus;
+    private String approvalStatus;
     private String workItemType;
     private String workItemName;
     private String approverName;

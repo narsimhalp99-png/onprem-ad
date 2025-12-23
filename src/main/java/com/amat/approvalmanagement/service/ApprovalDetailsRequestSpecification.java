@@ -49,11 +49,11 @@ public class ApprovalDetailsRequestSpecification {
                 ));
             }
 
-            if (filter.getApprovalStatus() != null && !filter.getApprovalStatus().name().isEmpty()) {
-                log.debug("Applying approvalStatus filter | status={}", filter.getApprovalStatus().name());
+            if (filter.getApprovalStatus() != null && !filter.getApprovalStatus().isEmpty()) {
+                log.debug("Applying approvalStatus filter | status={}", filter.getApprovalStatus());
                 predicates.add(cb.equal(
                         root.get("approvalStatus"),
-                        filter.getApprovalStatus().name()
+                        filter.getApprovalStatus()
                 ));
             }
 

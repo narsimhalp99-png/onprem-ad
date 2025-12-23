@@ -33,8 +33,8 @@ spring:
 
 logging:
   config: classpath:logback-spring.xml
-  level:
-    org.springframework.security: DEBUG
+#  level:
+#    org.springframework.security: DEBUG
 
 ldap:
   user:
