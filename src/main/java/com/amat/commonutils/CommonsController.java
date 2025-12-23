@@ -1,6 +1,5 @@
 package com.amat.commonutils;
 
-
 import com.amat.accessmanagement.entity.UserEntity;
 import com.amat.accessmanagement.service.UserEnrollmentService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -20,12 +19,28 @@ public class CommonsController {
     UserEnrollmentService svc;
 
     @GetMapping("/getLoggedInUserDetails")
-    public ResponseEntity<Object> getUser(@RequestParam(name = "additionalDetails", defaultValue = "false") boolean additionalDetails, HttpServletRequest servletRequest) {
+    public ResponseEntity<Object> getUser(
+            @RequestParam(name = "additionalDetails", defaultValue = "false") boolean additionalDetails,
+            HttpServletRequest servletRequest) {
+
+        log.info(
+                "API HIT: getLoggedInUserDetails | additionalDetails={}",
+                additionalDetails
+        );
+
         String employeeId = servletRequest.getHeader("employeeId");
+
+        log.debug("EmployeeId extracted from header | employeeId={}", employeeId);
 
         UserEntity user = svc.getUser(employeeId, additionalDetails);
 
         if (user == null) {
+
+            log.warn(
+                    "Logged-in user not found | employeeId={}",
+                    employeeId
+            );
+
             return ResponseEntity.status(404).body(
                     Map.of(
                             "status", "failed",
@@ -33,6 +48,11 @@ public class CommonsController {
                     )
             );
         }
+
+        log.info(
+                "Logged-in user details fetched successfully | employeeId={}",
+                employeeId
+        );
 
         return ResponseEntity.ok(
                 Map.of(

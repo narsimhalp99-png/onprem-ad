@@ -3,6 +3,7 @@ package com.amat.admanagement.repository;
 import com.amat.admanagement.dto.ComputersRequest;
 import com.amat.admanagement.mapper.ComputerAttributesMapper;
 import com.amat.admanagement.mapper.LdapComputerProperties;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.ldap.control.PagedResultsDirContextProcessor;
@@ -14,9 +15,9 @@ import javax.naming.directory.SearchControls;
 import java.util.*;
 import java.util.regex.Pattern;
 
+@Slf4j
 @Repository
 public class ComputerRepository {
-
 
     @Value("${ldap.computer.base-filter:''}")
     String computerBaseFilter;
@@ -30,43 +31,83 @@ public class ComputerRepository {
     @Autowired
     LdapComputerProperties ldapComputerProperties;
 
-
     public Map<String, Object> getComputersPaged(ComputersRequest request) {
+
+        log.info("START getComputersPaged");
+
         Map<String, Object> response = new HashMap<>();
         List<Map<String, Object>> page = Collections.emptyList();
-        String searchBaseOU =  request.getSearchBaseOU()!=null ? request.getSearchBaseOU() : "";
+
+        String searchBaseOU = request.getSearchBaseOU() != null ? request.getSearchBaseOU() : "";
         searchBaseOU = searchBaseOU.replaceAll(",?" + Pattern.quote(defaultBase) + "$", "");
-//        searchBaseOU = searchBaseOU.replaceAll(",DC=.*", "");
+
+        log.debug(
+                "Resolved searchBaseOU | searchBaseOU={} | defaultBase={}",
+                searchBaseOU,
+                defaultBase
+        );
+
         // Combine default + custom attributes
-        Set<String> attributes = new LinkedHashSet<>(ldapComputerProperties.getDefaultAttributes());
+        Set<String> attributes =
+                new LinkedHashSet<>(ldapComputerProperties.getDefaultAttributes());
+
         if (request.getAddtnlAttributes() != null && !request.getAddtnlAttributes().isEmpty()) {
             attributes.addAll(request.getAddtnlAttributes());
         }
+
+        log.debug("LDAP attributes requested | attributes={}", attributes);
+
         SearchControls searchControls = new SearchControls();
         searchControls.setSearchScope(SearchControls.SUBTREE_SCOPE);
         searchControls.setReturningAttributes(attributes.toArray(new String[0]));
 
         // Step 1: Get total count first (to calculate total pages)
-        int totalCount = getTotalComputersCount(request.getFilter(),searchBaseOU);
-        int totalPages = (int) Math.ceil((double) totalCount / request.getPageSize());
+        int totalCount = getTotalComputersCount(request.getFilter(), searchBaseOU);
+        int totalPages =
+                (int) Math.ceil((double) totalCount / request.getPageSize());
+
+        log.info(
+                "Total computers count resolved | totalCount={} | totalPages={}",
+                totalCount,
+                totalPages
+        );
 
         // Step 2: Handle out-of-bound pages
         if (request.getPageNumber() >= totalPages) {
+
+            log.warn(
+                    "Requested page out of bounds | pageNumber={} | totalPages={}",
+                    request.getPageNumber(),
+                    totalPages
+            );
+
             response.put("data", Collections.emptyList());
             response.put("pageNumber", request.getPageNumber());
             response.put("pageSize", request.getPageSize());
             response.put("totalPages", totalPages);
             response.put("totalCount", totalCount);
             response.put("hasMore", false);
+
+            log.info("END getComputersPaged (out-of-bound page)");
+
             return response;
         }
 
         // Step 3: Paginated fetch
-        PagedResultsDirContextProcessor processor = new PagedResultsDirContextProcessor(request.getPageSize());
+        PagedResultsDirContextProcessor processor =
+                new PagedResultsDirContextProcessor(request.getPageSize());
+
         int currentPage = 0;
         boolean hasMorePages = false;
 
+        log.debug(
+                "Starting LDAP paginated search | pageSize={} | targetPage={}",
+                request.getPageSize(),
+                request.getPageNumber()
+        );
+
         while (true) {
+
             page = ldapTemplate.search(
                     searchBaseOU,
                     getFilter(request.getFilter()),
@@ -77,11 +118,22 @@ public class ComputerRepository {
 
             hasMorePages = processor.getCookie() != null;
 
+            log.debug(
+                    "LDAP page fetched | currentPage={} | pageSize={} | hasMorePages={}",
+                    currentPage,
+                    page != null ? page.size() : 0,
+                    hasMorePages
+            );
+
             if (currentPage == request.getPageNumber() || !hasMorePages) {
                 break;
             }
 
-            processor = new PagedResultsDirContextProcessor(request.getPageSize(), processor.getCookie());
+            processor =
+                    new PagedResultsDirContextProcessor(
+                            request.getPageSize(),
+                            processor.getCookie()
+                    );
             currentPage++;
         }
 
@@ -92,26 +144,56 @@ public class ComputerRepository {
         response.put("totalCount", totalCount);
         response.put("hasMore", hasMorePages);
 
+        log.info(
+                "END getComputersPaged | returnedCount={} | pageNumber={}",
+                page != null ? page.size() : 0,
+                request.getPageNumber()
+        );
+
         return response;
     }
 
-    private int getTotalComputersCount(String filter,String searchBaseOU) {
+    private int getTotalComputersCount(String filter, String searchBaseOU) {
 
+        log.debug(
+                "START getTotalComputersCount | filter={} | searchBaseOU={}",
+                filter,
+                searchBaseOU
+        );
 
         SearchControls controls = new SearchControls();
         controls.setSearchScope(SearchControls.SUBTREE_SCOPE);
         controls.setReturningAttributes(new String[]{"distinguishedName"});
-        List<?> allComputers = ldapTemplate.search(searchBaseOU, getFilter(filter), controls, (AttributesMapper<Object>) attrs -> null);
-        return allComputers.size();
+
+        List<?> allComputers =
+                ldapTemplate.search(
+                        searchBaseOU,
+                        getFilter(filter),
+                        controls,
+                        (AttributesMapper<Object>) attrs -> null
+                );
+
+        int count = allComputers.size();
+
+        log.debug(
+                "END getTotalComputersCount | count={}",
+                count
+        );
+
+        return count;
     }
 
+    private String getFilter(String filter) {
 
-    private String getFilter(String filter){
+        log.debug(
+                "START getFilter | uiFilter={}",
+                filter
+        );
+
         String baseFilter = computerBaseFilter;
-
         String combinedFilter;
+
         if (filter != null && !filter.trim().isEmpty()) {
-            // Remove wrapping parentheses if UI already sends a full filter
             String trimmed = filter.trim();
             combinedFilter = trimmed.startsWith("(")
                     ? "(&" + baseFilter + trimmed + ")"
@@ -119,6 +201,11 @@ public class ComputerRepository {
         } else {
             combinedFilter = baseFilter;
         }
+
+        log.debug(
+                "END getFilter | combinedFilter={}",
+                combinedFilter
+        );
 
         return combinedFilter;
     }

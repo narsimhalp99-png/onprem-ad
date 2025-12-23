@@ -10,7 +10,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.Map;
 
-
 @Slf4j
 @Service
 public class GroupsService {
@@ -18,17 +17,42 @@ public class GroupsService {
     @Autowired
     GroupRepository groupRepository;
 
-
     public Map<String, Object> fetchAllGroups(GroupsRequest groupsRequest) {
 
-        return  groupRepository.getGroupsPaged(groupsRequest);
+        log.info("START fetchAllGroups");
 
+        log.debug(
+                "GroupsRequest | filter={} | pageNumber={} | pageSize={}",
+                groupsRequest.getFilter(),
+                groupsRequest.getPageNumber(),
+                groupsRequest.getPageSize()
+        );
+
+        Map<String, Object> response = groupRepository.getGroupsPaged(groupsRequest);
+
+        log.info(
+                "END fetchAllGroups | responseKeys={}",
+                response != null ? response.keySet() : "null"
+        );
+
+        return response;
     }
 
+    public ModifyGroupResponse modifyGroupMembers(ManageGroupRequest request) {
 
-    public ModifyGroupResponse modifyGroupMembers(ManageGroupRequest request){
+        log.info(
+                "START modifyGroupMembers | operation={} | groupDn={}",
+                request.getOperation(),
+                request.getGroupDn()
+        );
 
-        return groupRepository.modifyGroupMembers(request);
+        ModifyGroupResponse response = groupRepository.modifyGroupMembers(request);
 
+        log.info(
+                "END modifyGroupMembers | statusCode={}",
+                response.getStatusCode()
+        );
+
+        return response;
     }
 }

@@ -37,13 +37,25 @@ public class GroupRepository {
     LdapGroupProperties ldapGroupProperties;
 
     public Map<String, Object> getGroupsPaged(GroupsRequest request) {
+
+        log.info("START getGroupsPaged");
+
         Map<String, Object> response = new HashMap<>();
         List<Map<String, Object>> page = Collections.emptyList();
+
         String searchBaseOU = request.getSearchBaseOU() != null ? request.getSearchBaseOU() : "";
         searchBaseOU = searchBaseOU.replaceAll(",?" + Pattern.quote(defaultBase) + "$", "");
-//        searchBaseOU = searchBaseOU.replaceAll(",DC=.*", "");
+
+        log.debug(
+                "Resolved searchBaseOU | searchBaseOU={} | defaultBase={}",
+                searchBaseOU,
+                defaultBase
+        );
+
         // Combine default + custom attributes
-        Set<String> attributes = new LinkedHashSet<>(ldapGroupProperties.getDefaultAttributes());
+        Set<String> attributes =
+                new LinkedHashSet<>(ldapGroupProperties.getDefaultAttributes());
+
         if (request.getAddtnlAttributes() != null && !request.getAddtnlAttributes().isEmpty()) {
             attributes.addAll(request.getAddtnlAttributes());
         }
@@ -51,30 +63,58 @@ public class GroupRepository {
         // Always include 'member' attribute for recursive resolution
         attributes.add("member");
 
+        log.debug("LDAP attributes requested | attributes={}", attributes);
+
         SearchControls searchControls = new SearchControls();
         searchControls.setSearchScope(SearchControls.SUBTREE_SCOPE);
         searchControls.setReturningAttributes(attributes.toArray(new String[0]));
 
         // Step 1: Get total count
         int totalCount = getTotalGroupCount(request.getFilter(), searchBaseOU);
-        int totalPages = (int) Math.ceil((double) totalCount / request.getPageSize());
+        int totalPages =
+                (int) Math.ceil((double) totalCount / request.getPageSize());
+
+        log.info(
+                "Total groups count resolved | totalCount={} | totalPages={}",
+                totalCount,
+                totalPages
+        );
 
         if (request.getPageNumber() >= totalPages) {
+
+            log.warn(
+                    "Requested page out of bounds | pageNumber={} | totalPages={}",
+                    request.getPageNumber(),
+                    totalPages
+            );
+
             response.put("data", Collections.emptyList());
             response.put("pageNumber", request.getPageNumber());
             response.put("pageSize", request.getPageSize());
             response.put("totalPages", totalPages);
             response.put("totalCount", totalCount);
             response.put("hasMore", false);
+
+            log.info("END getGroupsPaged (out-of-bound page)");
+
             return response;
         }
 
         // Step 2: Paginated fetch
-        PagedResultsDirContextProcessor processor = new PagedResultsDirContextProcessor(request.getPageSize());
+        PagedResultsDirContextProcessor processor =
+                new PagedResultsDirContextProcessor(request.getPageSize());
+
         int currentPage = 0;
         boolean hasMorePages = false;
 
+        log.debug(
+                "Starting LDAP paginated group search | pageSize={} | targetPage={}",
+                request.getPageSize(),
+                request.getPageNumber()
+        );
+
         while (true) {
+
             page = ldapTemplate.search(
                     searchBaseOU,
                     getFilter(request.getFilter()),
@@ -85,22 +125,39 @@ public class GroupRepository {
 
             //  If recursive flag is enabled, expand all nested members
             if (request.isFetchRecursiveMembers()) {
+
+                log.debug("Expanding recursive members for fetched groups");
+
                 for (Map<String, Object> group : page) {
                     Object membersObj = group.get("member");
                     Set<String> recursiveMembers = new LinkedHashSet<>();
+
                     if (membersObj != null) {
                         processMembersObject(membersObj, recursiveMembers);
                     }
+
                     group.put("member", new ArrayList<>(recursiveMembers));
                 }
             }
 
             hasMorePages = processor.getCookie() != null;
+
+            log.debug(
+                    "LDAP page fetched | currentPage={} | pageSize={} | hasMorePages={}",
+                    currentPage,
+                    page != null ? page.size() : 0,
+                    hasMorePages
+            );
+
             if (currentPage == request.getPageNumber() || !hasMorePages) {
                 break;
             }
 
-            processor = new PagedResultsDirContextProcessor(request.getPageSize(), processor.getCookie());
+            processor =
+                    new PagedResultsDirContextProcessor(
+                            request.getPageSize(),
+                            processor.getCookie()
+                    );
             currentPage++;
         }
 
@@ -111,29 +168,69 @@ public class GroupRepository {
         response.put("totalCount", totalCount);
         response.put("hasMore", hasMorePages);
 
+        log.info(
+                "END getGroupsPaged | returnedCount={} | pageNumber={}",
+                page != null ? page.size() : 0,
+                request.getPageNumber()
+        );
+
         return response;
     }
 
     private int getTotalGroupCount(String filter, String searchBaseOU) {
+
+        log.debug(
+                "START getTotalGroupCount | filter={} | searchBaseOU={}",
+                filter,
+                searchBaseOU
+        );
+
         SearchControls controls = new SearchControls();
         controls.setSearchScope(SearchControls.SUBTREE_SCOPE);
         controls.setReturningAttributes(new String[]{"distinguishedName"});
-        List<?> allGroups = ldapTemplate.search(searchBaseOU, getFilter(filter), controls, (AttributesMapper<Object>) attrs -> null);
-        return allGroups.size();
+
+        List<?> allGroups =
+                ldapTemplate.search(
+                        searchBaseOU,
+                        getFilter(filter),
+                        controls,
+                        (AttributesMapper<Object>) attrs -> null
+                );
+
+        int count = allGroups.size();
+
+        log.debug(
+                "END getTotalGroupCount | count={}",
+                count
+        );
+
+        return count;
     }
 
     private String getFilter(String filter) {
+
+        log.debug("START getFilter | uiFilter={}", filter);
+
         if (filter != null && !filter.trim().isEmpty()) {
             String trimmed = filter.trim();
-            return trimmed.startsWith("(")
-                    ? "(&" + groupBaseFilter + trimmed + ")"
-                    : "(&" + groupBaseFilter + "(" + trimmed + "))";
+            String combined =
+                    trimmed.startsWith("(")
+                            ? "(&" + groupBaseFilter + trimmed + ")"
+                            : "(&" + groupBaseFilter + "(" + trimmed + "))";
+
+            log.debug("END getFilter | combinedFilter={}", combined);
+            return combined;
         }
+
+        log.debug("END getFilter | baseFilter={}", groupBaseFilter);
         return groupBaseFilter;
     }
 
     // Process the members object (Collection, Array, or single String)
     private void processMembersObject(Object membersObj, Set<String> recursiveMembers) {
+
+        log.debug("Processing members object | type={}", membersObj.getClass().getName());
+
         if (membersObj instanceof Collection) {
             for (Object o : (Collection<?>) membersObj) {
                 processMemberDn(String.valueOf(o), recursiveMembers);
@@ -149,95 +246,126 @@ public class GroupRepository {
 
     // Add DN to set, and recursively fetch nested members if it's a group
     private void processMemberDn(String memberDn, Set<String> allMembers) {
-//        if (!allMembers.add(memberDn)) {
-//            return; // Already processed
-//        }
+
+        log.debug("Processing member DN | dn={}", memberDn);
 
         try {
-            // Check if DN is a group
             boolean isGroup = isGroupObject(memberDn);
+
             if (isGroup) {
+                log.debug("DN is a group, resolving nested members | dn={}", memberDn);
                 List<String> nestedMembers = getGroupMembers(memberDn);
+
                 for (String nestedDn : nestedMembers) {
                     processMemberDn(nestedDn, allMembers);
                 }
-            }else {
+            } else {
                 allMembers.add(memberDn);
             }
         } catch (Exception e) {
-            log.info("Exception is ::{}",e.getLocalizedMessage());
+            log.info("Exception while processing member DN | dn={} | error={}", memberDn, e.getLocalizedMessage());
         }
     }
 
     // Check if DN is a group
     private boolean isGroupObject(String dn) {
+
+        log.debug("Checking if DN is group | dn={}", dn);
+
         SearchControls controls = new SearchControls();
         controls.setSearchScope(SearchControls.OBJECT_SCOPE);
         controls.setReturningAttributes(new String[]{"objectClass"});
-        String base = "DC=mycomp,DC=com";
-        String relativeDn = dn.endsWith("," + base)
-                ? dn.substring(0, dn.length() - ("," + base).length())
-                : dn;
-        List<Boolean> results = ldapTemplate.search(
-                relativeDn,
-                "(objectClass=group)",
-                controls,
-                (AttributesMapper<Boolean>) attrs -> true
-        );
 
-        return !results.isEmpty();
+        String base = "DC=mycomp,DC=com";
+        String relativeDn =
+                dn.endsWith("," + base)
+                        ? dn.substring(0, dn.length() - ("," + base).length())
+                        : dn;
+
+        List<Boolean> results =
+                ldapTemplate.search(
+                        relativeDn,
+                        "(objectClass=group)",
+                        controls,
+                        (AttributesMapper<Boolean>) attrs -> true
+                );
+
+        boolean isGroup = !results.isEmpty();
+
+        log.debug("DN group check result | dn={} | isGroup={}", dn, isGroup);
+
+        return isGroup;
     }
 
     // Fetch members of a group DN
     private List<String> getGroupMembers(String dn) {
+
+        log.debug("Fetching group members | groupDn={}", dn);
+
         SearchControls controls = new SearchControls();
         controls.setSearchScope(SearchControls.OBJECT_SCOPE);
         controls.setReturningAttributes(new String[]{"member"});
+
         String base = "DC=mycomp,DC=com";
-        String relativeDn = dn.endsWith("," + base)
-                ? dn.substring(0, dn.length() - ("," + base).length())
-                : dn;
+        String relativeDn =
+                dn.endsWith("," + base)
+                        ? dn.substring(0, dn.length() - ("," + base).length())
+                        : dn;
 
-        List<List<String>> results = ldapTemplate.search(
-                relativeDn,
-                "(objectClass=group)",
-                controls,
-                (AttributesMapper<List<String>>) attrs -> {
-                    Attribute memberAttr = attrs.get("member");
-                    List<String> list = new ArrayList<>();
-                    if (memberAttr != null) {
-                        NamingEnumeration<?> all = memberAttr.getAll();
-                        while (all.hasMore()) {
-                            list.add(String.valueOf(all.next()));
+        List<List<String>> results =
+                ldapTemplate.search(
+                        relativeDn,
+                        "(objectClass=group)",
+                        controls,
+                        (AttributesMapper<List<String>>) attrs -> {
+                            Attribute memberAttr = attrs.get("member");
+                            List<String> list = new ArrayList<>();
+                            if (memberAttr != null) {
+                                NamingEnumeration<?> all = memberAttr.getAll();
+                                while (all.hasMore()) {
+                                    list.add(String.valueOf(all.next()));
+                                }
+                            }
+                            return list;
                         }
-                    }
-                    return list;
-                }
-        );
+                );
 
-        return results.isEmpty() ? Collections.emptyList() : results.get(0);
+        List<String> members =
+                results.isEmpty() ? Collections.emptyList() : results.get(0);
+
+        log.debug("Group members fetched | groupDn={} | count={}", dn, members.size());
+
+        return members;
     }
 
     public ModifyGroupResponse modifyGroupMembers(ManageGroupRequest request) {
+
+        log.info(
+                "START modifyGroupMembers | operation={} | groupDn={} | usersCount={}",
+                request.getOperation(),
+                request.getGroupDn(),
+                request.getUserDns() != null ? request.getUserDns().size() : 0
+        );
+
         ModifyGroupResponse response = new ModifyGroupResponse();
         List<String> userNotExistList = new ArrayList<>();
         List<String> errors = new ArrayList<>();
+
         response.setUserNotExist(userNotExistList);
         response.setErrors(errors);
 
         try {
-            // Validate group DN
             if (!isDnExists(request.getGroupDn())) {
                 throw new IllegalArgumentException("Group DN does not exist: " + request.getGroupDn());
             }
 
-            // Validate operation
             String operation = request.getOperation().toUpperCase();
             if (!operation.equals("ADD") && !operation.equals("REMOVE")) {
-                throw new IllegalArgumentException("Invalid operation: " + operation + ". Use ADD or REMOVE.");
+                throw new IllegalArgumentException(
+                        "Invalid operation: " + operation + ". Use ADD or REMOVE."
+                );
             }
 
-            // Validate user list
             List<String> userDns = request.getUserDns();
             if (userDns == null || userDns.isEmpty()) {
                 throw new IllegalArgumentException("User DN list cannot be empty.");
@@ -247,12 +375,11 @@ public class GroupRepository {
                 throw new IllegalArgumentException("Maximum 100 user DNs can be processed at a time.");
             }
 
-            // Prepare group name (without DC parts)
             String grpName = request.getGroupDn().replaceAll(",DC=.*", "");
             Name groupName = LdapNameBuilder.newInstance(grpName).build();
 
-            // Step 1: Separate valid and invalid users
             List<String> validUserDns = new ArrayList<>();
+
             for (String userDn : userDns) {
                 if (isDnExists(userDn)) {
                     validUserDns.add(userDn);
@@ -261,8 +388,8 @@ public class GroupRepository {
                 }
             }
 
-            // Step 2: If there are valid users, process them in ONE LDAP call
             if (!validUserDns.isEmpty()) {
+
                 Attribute memberAttr = new BasicAttribute("member");
                 validUserDns.forEach(memberAttr::add);
 
@@ -280,29 +407,48 @@ public class GroupRepository {
                 }
             }
 
-            // Step 3: Prepare final response
             if (errors.isEmpty() && userNotExistList.isEmpty()) {
                 response.setStatusCode("SUCCESS");
                 response.setMessage("All members processed successfully (" + operation + ")");
             } else if (!validUserDns.isEmpty()) {
                 response.setStatusCode("PARTIAL_SUCCESS");
-                response.setMessage("Some members failed or were invalid during " + operation + " operation.");
+                response.setMessage(
+                        "Some members failed or were invalid during " + operation + " operation."
+                );
             } else {
                 response.setStatusCode("FAILED");
-                response.setMessage("No valid members to process. All user DNs were invalid.");
+                response.setMessage(
+                        "No valid members to process. All user DNs were invalid."
+                );
             }
 
         } catch (Exception e) {
+
+            log.error(
+                    "Group modification failed | groupDn={} | error={}",
+                    request.getGroupDn(),
+                    e.getLocalizedMessage(),
+                    e
+            );
+
             response.getErrors().add(e.getLocalizedMessage());
             response.setStatusCode("FAILED");
             response.setMessage("Group modification failed: " + e.getLocalizedMessage());
         }
 
+        log.info(
+                "END modifyGroupMembers | statusCode={} | errorsCount={}",
+                response.getStatusCode(),
+                response.getErrors().size()
+        );
+
         return response;
     }
 
-
     private boolean isDnExists(String dn) {
+
+        log.debug("Checking DN existence | dn={}", dn);
+
         try {
             String lookUpDn = dn.replaceAll(",DC=.*", "");
             ldapTemplate.lookup(lookUpDn);
