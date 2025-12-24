@@ -24,12 +24,12 @@ public interface ServerElevationRepository extends JpaRepository<ServerElevation
 
     @Modifying
     @Transactional
-    @Query("UPDATE ServerElevationRequest e SET e.elevationStatus = :status, e.elevationStatusMessage = :msg, e.status = :finalStatus WHERE e.requestId = :requestId")
+    @Query("UPDATE ServerElevationRequest e SET e.elevationStatus = :elevationStatus, e.elevationStatusMessage = :msg, e.status = :status WHERE e.requestId = :requestId")
     void updateOnFailure(
             @Param("requestId") String requestId,
-            @Param("status") String status,
-            @Param("msg") String msg,
-            @Param("finalStatus") String finalStatus);
+            @Param("elevationStatus") String elevationStatus,
+            @Param("elevationStatusMessage") String elevationStatusMessage,
+            @Param("status") String status);
 
     @Modifying
     @Transactional

@@ -23,6 +23,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
@@ -371,6 +374,7 @@ public class ServerElevationService {
                         .workItemName(server + " (Duration: " + entry.getDurationInHours() + " Hours)")
                         .workItemType("SERVER-ELEVATION")
                         .approvalStatus(ApprovalStatus.Pending_Approval.name())
+                        .approvalLevel(1)
                         .build();
 
                 approvalRepo.save(approval);
@@ -484,9 +488,9 @@ public class ServerElevationService {
                 appAdminSuccess = true;
             } else {
                 errorMsg = String.join(", ", appResp.getErrors());
+                log.error("Add operation for user ::{} | with appAdminsGroupDn {} | to APP-ADMINS Failed with errors ::{}",userDn, appAdminsGroupDn,errorMsg);
             }
 
-            if (appAdminSuccess) {
 
                 log.info("Adding to LOCAL-ADMINS | server={}", server);
 
@@ -510,40 +514,23 @@ public class ServerElevationService {
                         serReq.setStatus(ApprovalStatus.In_Progress.name());
                     });
                     log.info("Updating server elevation table::Done");
+
                 } else {
                     errorMsg = String.join(", ", localResp.getErrors());
+                    log.error("Add operation for user ::{} | with localAdminsGroupDn {} | to APP-ADMINS Failed with errors ::{}",userDn, localAdminsGroupDn,errorMsg);
+
+                    serverRepo.updateOnFailure(
+                            requestId,
+                            "Failed",
+                             errorMsg != null ? errorMsg : "Group assignment failed",
+                            "Completed"
+                    );
+
                 }
-            }
 
         } catch (Exception ex) {
             log.error("Post-approval elevation failed | requestId={} | error={}",
                     requestId, ex.getMessage(), ex);
-            errorMsg = ex.getMessage();
-        }
-
-        if (appAdminSuccess && localAdminSuccess) {
-
-            log.info("Post-approval elevation success | requestId={}", requestId);
-
-            serverRepo.updateOnSuccess(
-                    requestId,
-                    LocalDateTime.now(),
-                    "Approved",
-                    "Admin access granted",
-                    "Completed"
-            );
-
-        } else {
-
-            log.warn("Post-approval elevation failed | requestId={} | error={}",
-                    requestId, errorMsg);
-
-            serverRepo.updateOnFailure(
-                    requestId,
-                    "Failed",
-                    errorMsg != null ? errorMsg : "Group assignment failed",
-                    "Completed"
-            );
         }
 
         log.info("END performPostApprovalDenyActionServerElevation | requestId={}", requestId);
