@@ -7,7 +7,9 @@ import com.amat.approvalmanagement.service.ApprovalsService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -56,25 +58,75 @@ public class ApprovalsController {
     }
 
     @PostMapping("/approveOrReject")
-    public Object approveOrReject(
+    public ResponseEntity<?> approveOrReject(
             @RequestBody ApprovalActionRequest request,
             HttpServletRequest httpServletRequest) {
 
-        log.info("API HIT: /approval-management/approveOrReject");
+        log.info("API HIT: POST /approval-management/approveOrReject");
 
         String loggedInUser = httpServletRequest.getHeader("employeeId");
-        log.debug("Logged-in user extracted from header | employeeId={}", loggedInUser);
+        log.debug("Logged-in user extracted from token header | employeeId={}", loggedInUser);
+
+        if (loggedInUser == null || loggedInUser.isBlank()) {
+            log.warn("Missing employeeId header");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ApiResponse("FAILED", "Missing LoggedIn user info"));
+        }
 
         log.info(
-                "Processing approval action | action={} | requestId={} | user={}",
-                request.getAction(),
+                "Processing approval action | approvalId={} | action={} | user={}",
                 request.getApprovalId(),
+                request.getAction(),
                 loggedInUser
         );
 
-        return approvalService.approveOrReject(request, loggedInUser);
+        try {
+            approvalService.approveOrReject(request, loggedInUser);
 
+            log.info(
+                    "Approval action completed successfully | approvalId={} | action={}",
+                    request.getApprovalId(),
+                    request.getAction()
+            );
 
+            return ResponseEntity.ok(
+                    new ApiResponse("SUCCESS", "Action processed successfully")
+            );
+
+        } catch (AccessDeniedException ex) {
+
+            log.warn(
+                    "Access denied during approveOrReject | approvalId={} | user={}",
+                    request.getApprovalId(),
+                    loggedInUser
+            );
+
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(new ApiResponse("FAILED", ex.getMessage()));
+
+        } catch (IllegalStateException ex) {
+
+            log.warn(
+                    "Invalid approval state | approvalId={} | reason={}",
+                    request.getApprovalId(),
+                    ex.getMessage()
+            );
+
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ApiResponse("FAILED", ex.getMessage()));
+
+        } catch (Exception ex) {
+
+            log.error(
+                    "Unexpected error during approveOrReject | approvalId={}",
+                    request.getApprovalId(),
+                    ex
+            );
+
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse("FAILED", "Internal server error"));
+        }
     }
+
 
 }

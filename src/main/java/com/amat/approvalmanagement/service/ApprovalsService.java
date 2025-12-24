@@ -118,7 +118,7 @@ public class ApprovalsService {
     }
 
     @Transactional
-    public Object approveOrReject(ApprovalActionRequest req, String loggedInUser) {
+    public void approveOrReject(ApprovalActionRequest req, String loggedInUser) {
 
         log.info(
                 "START approveOrReject | approvalId={} | action={} | user={}",
@@ -126,8 +126,6 @@ public class ApprovalsService {
                 req.getAction(),
                 loggedInUser
         );
-
-        ApprovalDetails approval = new ApprovalDetails();
 
         Optional<ApprovalDetails> approvals =
                 approvalDetailsRepository.findByApprovalIdAndApproverAndApprovalStatus(
@@ -137,77 +135,95 @@ public class ApprovalsService {
                 );
 
         log.debug(
-                "Fetched approval record | approvalId={} | present={}",
+                "Approval lookup completed | approvalId={} | found={}",
                 req.getApprovalId(),
                 approvals.isPresent()
         );
 
-        String requestedBy = "";
-
-        if (approvals.isPresent()) {
-            approval = approvals.get();
-            int level = approval.getApprovalLevel();
-            String requestId = approval.getRequestId();
-
-            if(!approval.getApprover().equalsIgnoreCase(loggedInUser)){
-                throw new AccessDeniedException("Access Denied: You are not authorized to perform this action");
-            }
-
-            log.debug(
-                    "Approval context resolved | requestId={} | level={} | workItemType={}",
-                    requestId,
-                    level,
-                    approval.getWorkItemType()
+        if (approvals.isEmpty()) {
+            log.warn(
+                    "Approval not found or not in pending state | approvalId={} | user={}",
+                    req.getApprovalId(),
+                    loggedInUser
             );
-
-            approval.setApprovalDate(LocalDateTime.now());
-            approval.setApprovalStatus(req.isApprove()
-                    ? ApprovalStatus.Approved.name()
-                    : ApprovalStatus.Denied.name());
-            approval.setApproverComment(req.getComment());
-
-            log.info(
-                    "Approval updated | requestId={} | level={} | status={}",
-                    requestId,
-                    level,
-                    approval.getApprovalStatus()
-            );
-
-            Optional<ServerElevationRequest> serverElevationRequest =
-                    serverElevationRequestRepository.findByRequestId(requestId);
-
-            requestedBy = serverElevationRequest
-                    .map(ServerElevationRequest::getRequestedBy)
-                    .orElse("");
-
-            log.debug(
-                    "Resolved requestedBy user | requestId={} | requestedBy={}",
-                    requestId,
-                    requestedBy
-            );
-
-            makeParallelApprovals(requestId, level, requestedBy, req.getAction());
+            throw new IllegalStateException("Approval not found or already processed");
         }
 
-        if (req.isApprove()) {
-            log.info(
-                    "Handling next approval level or post-action | requestId={} | level={}",
-                    approval.getRequestId(),
-                    approval.getApprovalLevel()
+        ApprovalDetails approval = approvals.get();
+
+        if (!approval.getApprover().equalsIgnoreCase(loggedInUser)) {
+            log.warn(
+                    "User not authorized to approve | approvalId={} | approver={} | loggedInUser={}",
+                    approval.getApprovalId(),
+                    approval.getApprover(),
+                    loggedInUser
             );
+            throw new AccessDeniedException("Access Denied: You are not authorized to perform this action");
+        }
+
+        int level = approval.getApprovalLevel();
+        String requestId = approval.getRequestId();
+
+        log.debug(
+                "Approval context resolved | requestId={} | level={} | workItemType={}",
+                requestId,
+                level,
+                approval.getWorkItemType()
+        );
+
+        approval.setApprovalDate(LocalDateTime.now());
+        approval.setApprovalStatus(
+                req.isApprove()
+                        ? ApprovalStatus.Approved.name()
+                        : ApprovalStatus.Denied.name()
+        );
+        approval.setApproverComment(req.getComment());
+
+        log.info(
+                "Approval updated | approvalId={} | status={} | level={}",
+                approval.getApprovalId(),
+                approval.getApprovalStatus(),
+                level
+        );
+
+        String requestedBy =
+                serverElevationRequestRepository.findByRequestId(requestId)
+                        .map(ServerElevationRequest::getRequestedBy)
+                        .orElse("");
+
+        log.debug(
+                "Resolved request owner | requestId={} | requestedBy={}",
+                requestId,
+                requestedBy
+        );
+
+        // Handle parallel approvals
+        makeParallelApprovals(requestId, level, requestedBy, req.getAction());
+
+        if (req.isApprove()) {
+
+            log.info(
+                    "Approval accepted, moving to next step | requestId={} | level={}",
+                    requestId,
+                    level
+            );
+
             handleNextLevelOrPostAction(
                     requestedBy,
-                    approval.getRequestId(),
-                    approval.getApprovalLevel(),
+                    requestId,
+                    level,
                     approval.getWorkItemType()
             );
+
         } else {
+
             log.info(
-                    "Cancelling future approvals | requestId={} | level={}",
-                    approval.getRequestId(),
-                    approval.getApprovalLevel()
+                    "Approval rejected, cancelling future approvals | requestId={} | level={}",
+                    requestId,
+                    level
             );
-            cancelFutureApprovals(approval.getRequestId(), approval.getApprovalLevel());
+
+            cancelFutureApprovals(requestId, level);
         }
 
         log.info(
@@ -216,11 +232,8 @@ public class ApprovalsService {
                 req.getAction(),
                 loggedInUser
         );
-
-        return ResponseEntity.ok(
-                new ApiResponse("SUCCESS", "Action processed successfully")
-        );
     }
+
 
     private void makeParallelApprovals(
             String requestId,
@@ -242,11 +255,14 @@ public class ApprovalsService {
                         ApprovalStatus.Pending_Approval.name()
                 );
 
-        log.debug(
-                "Parallel approvals found | requestId={} | count={}",
-                requestId,
-                approvals.size()
-        );
+        if (approvals.isEmpty()) {
+            log.debug(
+                    "No parallel approvals found | requestId={} | level={}",
+                    requestId,
+                    level
+            );
+            return;
+        }
 
         approvals.forEach(a -> {
             a.setApprovalStatus("Not-Required");
@@ -254,11 +270,12 @@ public class ApprovalsService {
         });
 
         log.info(
-                "END makeParallelApprovals | requestId={} | updatedCount={}",
+                "Parallel approvals updated | requestId={} | updatedCount={}",
                 requestId,
                 approvals.size()
         );
     }
+
 
     private void handleNextLevelOrPostAction(
             String loggedInUser,
@@ -274,11 +291,12 @@ public class ApprovalsService {
         );
 
         List<ApprovalDetails> next =
-                approvalDetailsRepository.findByRequestIdAndApprovalStatusAndApprovalLevel(
-                        requestId,
-                        "Not-Started",
-                        level + 1
-                );
+                approvalDetailsRepository
+                        .findByRequestIdAndApprovalStatusAndApprovalLevel(
+                                requestId,
+                                "Not-Started",
+                                level + 1
+                        );
 
         log.debug(
                 "Next level approvals fetched | requestId={} | nextLevel={} | count={}",
@@ -290,6 +308,7 @@ public class ApprovalsService {
         if (!next.isEmpty()) {
             next.forEach(a ->
                     a.setApprovalStatus(ApprovalStatus.Pending_Approval.name()));
+
             log.info(
                     "Next level approvals activated | requestId={} | level={}",
                     requestId,
@@ -297,7 +316,7 @@ public class ApprovalsService {
             );
         } else {
             log.info(
-                    "No further approval levels found, performing post-approval action | requestId={}",
+                    "No further approval levels, performing post-approval action | requestId={}",
                     requestId
             );
             performPostApprovalAction(loggedInUser, requestId, workItemType);
@@ -308,6 +327,7 @@ public class ApprovalsService {
                 requestId
         );
     }
+
 
     private void cancelFutureApprovals(String requestId, int level) {
 
