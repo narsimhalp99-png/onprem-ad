@@ -56,7 +56,7 @@ public class ApprovalsController {
     }
 
     @PostMapping("/approveOrReject")
-    public ResponseEntity<ApiResponse> approveOrReject(
+    public Object approveOrReject(
             @RequestBody ApprovalActionRequest request,
             HttpServletRequest httpServletRequest) {
 
@@ -72,18 +72,9 @@ public class ApprovalsController {
                 loggedInUser
         );
 
-        approvalService.approveOrReject(request, loggedInUser);
+        return approvalService.approveOrReject(request, loggedInUser);
 
-        log.info(
-                "Approval action processed successfully | action={} | requestId={} | user={}",
-                request.getAction(),
-                request.getApprovalId(),
-                loggedInUser
-        );
 
-        return ResponseEntity.ok(
-                new ApiResponse("SUCCESS", "Action processed successfully")
-        );
     }
 
 }

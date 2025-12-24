@@ -64,7 +64,10 @@ public class RoleService {
                     log.error("User not found while assigning role | employeeId={}", employeeId);
                     return new RuntimeException("User not found: " + employeeId);
                 });
-
+        if (Boolean.FALSE.equals(userEntity.getIsActive())) {
+            log.error("Inactive user while assigning role | employeeId={}", employeeId);
+            throw new RuntimeException("User is not active: " + employeeId);
+        }
         log.debug("User entity fetched | employeeId={}", employeeId);
 
         UserRoleMapping existing =

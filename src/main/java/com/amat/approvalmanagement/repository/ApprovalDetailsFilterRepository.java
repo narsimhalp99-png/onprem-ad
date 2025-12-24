@@ -1,6 +1,6 @@
 package com.amat.approvalmanagement.repository;
 
-import com.amat.serverelevation.entity.ApprovalDetails;
+import com.amat.approvalmanagement.entity.ApprovalDetails;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 

@@ -2,8 +2,7 @@ package com.amat.serverelevation.repository;
 
 
 
-import com.amat.approvalmanagement.enums.ApprovalStatus;
-import com.amat.serverelevation.entity.ApprovalDetails;
+import com.amat.approvalmanagement.entity.ApprovalDetails;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

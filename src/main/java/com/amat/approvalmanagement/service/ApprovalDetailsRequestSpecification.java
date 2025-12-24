@@ -1,7 +1,7 @@
 package com.amat.approvalmanagement.service;
 
 import com.amat.approvalmanagement.dto.ApprovalDetailsFilterDTO;
-import com.amat.serverelevation.entity.ApprovalDetails;
+import com.amat.approvalmanagement.entity.ApprovalDetails;
 import jakarta.persistence.criteria.Predicate;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.jpa.domain.Specification;

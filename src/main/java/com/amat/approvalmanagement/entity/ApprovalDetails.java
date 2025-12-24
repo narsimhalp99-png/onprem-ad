@@ -1,7 +1,6 @@
-package com.amat.serverelevation.entity;
+package com.amat.approvalmanagement.entity;
 
 
-import com.amat.approvalmanagement.enums.ApprovalStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -56,10 +55,9 @@ public class ApprovalDetails {
 
     @Column(
             nullable = false,
-            insertable = false,
-            columnDefinition = "int default 1"
+            insertable = false
     )
-    private int approvalLevel;
+    private int approvalLevel=1;
 
     private LocalDateTime approvalDate;
 

@@ -10,7 +10,7 @@ import com.amat.admanagement.service.UserService;
 import com.amat.approvalmanagement.enums.ApprovalStatus;
 import com.amat.serverelevation.DTO.getServerElevationRequests;
 import com.amat.serverelevation.DTO.*;
-import com.amat.serverelevation.entity.ApprovalDetails;
+import com.amat.approvalmanagement.entity.ApprovalDetails;
 import com.amat.serverelevation.entity.ServerElevationRequest;
 import com.amat.serverelevation.repository.ApprovalDetailsRepository;
 import com.amat.serverelevation.repository.ServerElevationRepository;

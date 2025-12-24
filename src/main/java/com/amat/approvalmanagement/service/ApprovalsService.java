@@ -1,14 +1,13 @@
 package com.amat.approvalmanagement.service;
 
 import com.amat.accessmanagement.service.RoleService;
-import com.amat.admanagement.dto.ManageGroupRequest;
-import com.amat.admanagement.dto.ModifyGroupResponse;
 import com.amat.admanagement.service.GroupsService;
+import com.amat.approvalmanagement.dto.ApiResponse;
 import com.amat.approvalmanagement.dto.ApprovalActionRequest;
 import com.amat.approvalmanagement.dto.ApprovalDetailsFilterDTO;
 import com.amat.approvalmanagement.enums.ApprovalStatus;
 import com.amat.approvalmanagement.repository.ApprovalDetailsFilterRepository;
-import com.amat.serverelevation.entity.ApprovalDetails;
+import com.amat.approvalmanagement.entity.ApprovalDetails;
 import com.amat.serverelevation.entity.ServerElevationRequest;
 import com.amat.serverelevation.repository.ApprovalDetailsRepository;
 import com.amat.serverelevation.repository.ServerElevationRepository;
@@ -21,7 +20,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
-import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.transaction.annotation.Transactional;
@@ -120,7 +118,7 @@ public class ApprovalsService {
     }
 
     @Transactional
-    public void approveOrReject(ApprovalActionRequest req, String loggedInUser) {
+    public Object approveOrReject(ApprovalActionRequest req, String loggedInUser) {
 
         log.info(
                 "START approveOrReject | approvalId={} | action={} | user={}",
@@ -150,6 +148,10 @@ public class ApprovalsService {
             approval = approvals.get();
             int level = approval.getApprovalLevel();
             String requestId = approval.getRequestId();
+
+            if(!approval.getApprover().equalsIgnoreCase(loggedInUser)){
+                throw new AccessDeniedException("Access Denied: You are not authorized to perform this action");
+            }
 
             log.debug(
                     "Approval context resolved | requestId={} | level={} | workItemType={}",
@@ -184,7 +186,7 @@ public class ApprovalsService {
                     requestedBy
             );
 
-            markParallelApprovals(requestId, level, requestedBy, req.getAction());
+            makeParallelApprovals(requestId, level, requestedBy, req.getAction());
         }
 
         if (req.isApprove()) {
@@ -214,16 +216,20 @@ public class ApprovalsService {
                 req.getAction(),
                 loggedInUser
         );
+
+        return ResponseEntity.ok(
+                new ApiResponse("SUCCESS", "Action processed successfully")
+        );
     }
 
-    private void markParallelApprovals(
+    private void makeParallelApprovals(
             String requestId,
             int level,
             String user,
             String action) {
 
         log.debug(
-                "START markParallelApprovals | requestId={} | level={} | action={}",
+                "START makeParallelApprovals | requestId={} | level={} | action={}",
                 requestId,
                 level,
                 action
@@ -248,7 +254,7 @@ public class ApprovalsService {
         });
 
         log.info(
-                "END markParallelApprovals | requestId={} | updatedCount={}",
+                "END makeParallelApprovals | requestId={} | updatedCount={}",
                 requestId,
                 approvals.size()
         );

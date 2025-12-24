@@ -20,6 +20,7 @@ public class UserEntity {
 
     private String firstName;
     private String lastName;
+    private String email;
     private String displayName;
     private String organization;
     private String subOrganization;
@@ -32,7 +33,7 @@ public class UserEntity {
             updatable = false,
             insertable = false,
             columnDefinition =
-                    "DATETIMEOFFSET DEFAULT SYSDATETIMEOFFSET()"
+                    "DATETIME DEFAULT GETDATE()"
     )
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
