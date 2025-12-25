@@ -7,5 +7,6 @@ public enum ApprovalStatus {
     Denied,
     NOT_REQUIRED,
     Cancelled,
-    In_Progress
+    In_Progress,
+    ReAssigned
 }

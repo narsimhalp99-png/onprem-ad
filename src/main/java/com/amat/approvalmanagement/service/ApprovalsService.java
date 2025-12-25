@@ -4,6 +4,7 @@ import com.amat.accessmanagement.service.RoleService;
 import com.amat.admanagement.service.GroupsService;
 import com.amat.approvalmanagement.dto.ApprovalActionRequest;
 import com.amat.approvalmanagement.dto.ApprovalDetailsFilterDTO;
+import com.amat.approvalmanagement.dto.ReassignApprovalRequest;
 import com.amat.approvalmanagement.enums.ApprovalStatus;
 import com.amat.approvalmanagement.repository.ApprovalDetailsFilterRepository;
 import com.amat.approvalmanagement.entity.ApprovalDetails;
@@ -26,6 +27,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.springframework.web.server.ResponseStatusException;
 
 @Slf4j
 @Service
@@ -390,6 +392,143 @@ public class ApprovalsService {
                 "END performPostApprovalAction | requestId={}",
                 requestId
         );
+    }
+
+
+    public void reassignApproval(ReassignApprovalRequest req, String loggedInUser) {
+
+        log.info(
+                "Starting approval reassignment | approvalId={} | initiatedBy={}",
+                req.getApprovalId(),
+                loggedInUser
+        );
+
+        // 1. Fetch existing approval
+        ApprovalDetails existing = approvalRepo
+                .findById(req.getApprovalId())
+                .orElseThrow(() -> {
+                    log.warn(
+                            "Approval not found for reassignment | approvalId={} | initiatedBy={}",
+                            req.getApprovalId(),
+                            loggedInUser
+                    );
+                    return new ResponseStatusException(
+                            HttpStatus.NOT_FOUND,
+                            "Approval not found"
+                    );
+                });
+
+        String oldApprover = existing.getApprover();
+
+        log.info(
+                "Existing approval fetched | approvalId={} | oldApprover={} | approvalLevel={}",
+                existing.getApprovalId(),
+                oldApprover,
+                existing.getApprovalLevel()
+        );
+
+        // 2. Update existing approval entry
+        existing.setApprovalStatus(ApprovalStatus.ReAssigned.name());
+        existing.setApproverComment(
+                String.format(
+                        "Reassigned from '%s' to '%s' by %s. %s",
+                        oldApprover,
+                        req.getNewApprover(),
+                        loggedInUser,
+                        req.getComment()
+                )
+        );
+//        existing.setApprovalDate(LocalDateTime.now());
+
+        approvalRepo.save(existing);
+
+        log.info(
+                "Existing approval marked as ReAssigned | approvalId={} | oldApprover={} | newApprover={}",
+                existing.getApprovalId(),
+                oldApprover,
+                req.getNewApprover()
+        );
+
+        // 3. Create new approval entry
+        ApprovalDetails newApproval = ApprovalDetails.builder()
+                .requestId(existing.getRequestId())
+                .approver(req.getNewApprover())
+                .approverName(req.getNewApproverName())
+                .workItemName(existing.getWorkItemName())
+                .workItemType(existing.getWorkItemType())
+                .approvalLevel(existing.getApprovalLevel())
+                .approverComment(req.getComment())
+                .approvalStatus(ApprovalStatus.Pending_Approval.name())
+                .approvalRequestDate(LocalDateTime.now())
+                .build();
+
+        approvalRepo.save(newApproval);
+
+        log.info(
+                "New approval created | newApprovalId={} | requestId={} | approver={} | status={}",
+                newApproval.getApprovalId(),
+                newApproval.getRequestId(),
+                newApproval.getApprover(),
+                newApproval.getApprovalStatus()
+        );
+
+        // 4. Update server_elevation_requests.approver_id
+        int updatedRows = 0;
+        if ("SERVER-ELEVATION".equalsIgnoreCase(newApproval.getWorkItemType())) {
+
+            log.info(
+                    "SERVER-ELEVATION detected. Updating approvalId in server_elevation_requests. " +
+                            "requestId={}, newApprovalId={}",
+                    newApproval.getRequestId(),
+                    newApproval.getApprovalId()
+            );
+
+            try {
+                updatedRows = serverRepo.updateApprovalId(
+                        newApproval.getRequestId(),
+                        String.valueOf(newApproval.getApprovalId())
+                );
+
+                if (updatedRows > 0) {
+                    log.info(
+                            "Successfully updated server_elevation_requests with new approvalId. " +
+                                    "requestId={}, approvalId={}, rowsUpdated={}",
+                            newApproval.getRequestId(),
+                            newApproval.getApprovalId(),
+                            updatedRows
+                    );
+                } else {
+                    log.warn(
+                            "No rows updated in server_elevation_requests. Possible data issue. " +
+                                    "requestId={}, approvalId={}",
+                            newApproval.getRequestId(),
+                            newApproval.getApprovalId()
+                    );
+                }
+
+            } catch (Exception ex) {
+                log.error(
+                        "Failed to update approvalId in server_elevation_requests. " +
+                                "requestId={}, approvalId={}",
+                        newApproval.getRequestId(),
+                        newApproval.getApprovalId(),
+                        ex
+                );
+                throw ex; // or wrap in ResponseStatusException if needed
+            }
+        }
+
+
+
+        if (updatedRows == 0) {
+            log.warn("No {} requests row updated for requestId={}",newApproval.getWorkItemType(), newApproval.getRequestId());
+        } else {
+            log.info(" {} requests updated with new approvalId. requestId={}, newApprovalId={}",newApproval.getWorkItemType(),
+                    newApproval.getRequestId(), newApproval.getApprovalId());
+        }
+
+        log.info("Approval reassignment completed successfully. requestId={}", newApproval.getRequestId());
+
     }
 
 }

@@ -3,6 +3,7 @@ package com.amat.approvalmanagement.controller;
 import com.amat.approvalmanagement.dto.ApiResponse;
 import com.amat.approvalmanagement.dto.ApprovalActionRequest;
 import com.amat.approvalmanagement.dto.ApprovalDetailsSearchDTO;
+import com.amat.approvalmanagement.dto.ReassignApprovalRequest;
 import com.amat.approvalmanagement.service.ApprovalsService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/approval-management")
@@ -125,6 +127,50 @@ public class ApprovalsController {
 
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ApiResponse("FAILED", "Internal server error"));
+        }
+    }
+
+
+    @PostMapping("/reassign")
+    public ResponseEntity<?> reassignApproval(
+            @RequestBody ReassignApprovalRequest req,
+            HttpServletRequest httpServletRequest
+    ) {
+
+        String loggedInUser = httpServletRequest.getHeader("employeeId");
+        log.info(
+                "Reassign approval request received | approvalId={} | newApprover={} | requestedBy={}",
+                req.getApprovalId(),
+                req.getNewApprover(),
+                loggedInUser
+        );
+
+        try {
+            approvalService.reassignApproval(req, loggedInUser);
+
+            log.info(
+                    "Approval reassigned successfully | approvalId={} | to newApprover={}  | by={}",
+                    req.getApprovalId(),
+                    req.getNewApprover(),
+                    loggedInUser
+            );
+
+            return ResponseEntity.ok(Map.of(
+                    "status", "SUCCESS",
+                    "message", "Approval reassigned successfully"
+            ));
+
+        } catch (Exception ex) {
+
+            log.error(
+                    "Failed to reassign approval | approvalId={} | newApprover={} | by={}",
+                    req.getApprovalId(),
+                    req.getNewApprover(),
+                    loggedInUser,
+                    ex
+            );
+
+            throw ex;
         }
     }
 

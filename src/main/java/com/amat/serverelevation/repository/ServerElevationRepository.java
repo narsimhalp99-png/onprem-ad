@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Repository
 public interface ServerElevationRepository extends JpaRepository<ServerElevationRequest, Integer> {
@@ -33,8 +34,18 @@ public interface ServerElevationRepository extends JpaRepository<ServerElevation
 
     @Modifying
     @Transactional
-    @Query("UPDATE ServerElevationRequest e SET e.status = :status, e.approverId = :approverId WHERE e.requestId = :requestId")
+    @Query("UPDATE ServerElevationRequest e SET e.status = :status, e.approvalId = :approvalId WHERE e.requestId = :requestId")
     void updateStatusAndApprover(@Param("requestId") String requestId,
                                  @Param("status") String status,
-                                 @Param("approverId") String approverId);
+                                 @Param("approvalId") String approvalId);
+
+    @Modifying
+    @Transactional
+    @Query("""
+        update ServerElevationRequest s
+           set s.approvalId = :newApprovalId
+         where s.requestId = :requestId
+    """)
+    int updateApprovalId(@Param("requestId") String requestId,
+                         @Param("newApprovalId") String newApprovalId);
 }

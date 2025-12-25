@@ -66,7 +66,7 @@ public class ServerElevationRequest {
     @Column(nullable = false)
     private String status;
 
-    private String approverId;
+    private String approvalId;
 
 
 
