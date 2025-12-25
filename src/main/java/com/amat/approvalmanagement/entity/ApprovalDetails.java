@@ -58,4 +58,6 @@ public class ApprovalDetails {
 
     private LocalDateTime approvalDate;
 
+    private String requestee;
+
 }

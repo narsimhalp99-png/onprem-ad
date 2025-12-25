@@ -162,6 +162,7 @@ public class ApprovalsService {
         }
 
         int level = approval.getApprovalLevel();
+        String requestee = approval.getRequestee();
         String requestId = approval.getRequestId();
 
         log.debug(
@@ -186,19 +187,14 @@ public class ApprovalsService {
                 level
         );
 
-        String requestedBy =
-                serverElevationRequestRepository.findByRequestId(requestId)
-                        .map(ServerElevationRequest::getRequestedBy)
-                        .orElse("");
-
         log.debug(
-                "Resolved request owner | requestId={} | requestedBy={}",
+                "Resolved request owner | requestId={} | requestee={}",
                 requestId,
-                requestedBy
+                requestee
         );
 
         // Handle parallel approvals
-        makeParallelApprovals(requestId, level, requestedBy, req.getAction());
+        makeParallelApprovals(requestId, level, requestee, req.getAction());
 
         if (req.isApprove()) {
 
@@ -209,7 +205,7 @@ public class ApprovalsService {
             );
 
             handleNextLevelOrPostAction(
-                    requestedBy,
+                    requestee,
                     requestId,
                     level,
                     approval.getWorkItemType()
@@ -223,7 +219,20 @@ public class ApprovalsService {
                     level
             );
 
+
+
             cancelFutureApprovals(requestId, level);
+
+
+        if("SERVER-ELEVATION".equalsIgnoreCase(approval.getWorkItemType())){
+            serverRepo.updateOnFailure(
+                    requestId,
+                    null,
+                    null,
+                    "Completed"
+            );
+        }
+
         }
 
         log.info(
@@ -278,7 +287,7 @@ public class ApprovalsService {
 
 
     private void handleNextLevelOrPostAction(
-            String loggedInUser,
+            String requestee,
             String requestId,
             int level,
             String workItemType) {
@@ -319,7 +328,7 @@ public class ApprovalsService {
                     "No further approval levels, performing post-approval action | requestId={}",
                     requestId
             );
-            performPostApprovalAction(loggedInUser, requestId, workItemType);
+            performPostApprovalAction(requestee, requestId, workItemType);
         }
 
         log.debug(

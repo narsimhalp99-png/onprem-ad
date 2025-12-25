@@ -152,8 +152,8 @@ public class ServerElevationService {
                 (List<Map<String, Object>>) groupResult.get("data");
 
         if (groups == null || groups.isEmpty()) {
-            log.warn("SERVER_OWNER_NOT_FOUND | group={}", adminGroup);
-            setError(response, "SERVER_OWNER_NOT_FOUND");
+            log.warn("APP_ADMIN_GROUP_NOT_FOUND | group={}", adminGroup);
+            setError(response, "APP_ADMIN_GROUP_NOT_FOUND");
             return response;
         }
 
@@ -218,8 +218,9 @@ public class ServerElevationService {
                         ? (List<String>) memberObj
                         : Collections.singletonList(String.valueOf(memberObj));
 
-        if (members != null && members.contains(request.getRequestorEmpId())) {
-            log.warn("USER_ALREADY_ELEVATED | employeeId={}", request.getRequestorEmpId());
+        if (members != null && members.contains(userAdminDn)) {
+            log.warn("USER_ALREADY_ELEVATED | userAdminDn={}", userAdminDn);
+            response.setEligibleForElevation(false);
             setError(response, "USER_ALREADY_ELEVATED");
             return response;
         }
@@ -375,6 +376,7 @@ public class ServerElevationService {
                         .workItemType("SERVER-ELEVATION")
                         .approvalStatus(ApprovalStatus.Pending_Approval.name())
                         .approvalLevel(1)
+                        .requestee(employeeId)
                         .build();
 
                 approvalRepo.save(approval);
