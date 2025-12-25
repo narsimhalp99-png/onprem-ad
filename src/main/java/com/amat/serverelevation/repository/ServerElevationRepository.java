@@ -14,17 +14,17 @@ public interface ServerElevationRepository extends JpaRepository<ServerElevation
 
     @Modifying
     @Transactional
-    @Query("UPDATE ServerElevationRequest e SET e.elevationTime = :time, e.elevationStatus = :status, e.elevationStatusMessage = :msg, e.status = :finalStatus WHERE e.requestId = :requestId")
+    @Query("UPDATE ServerElevationRequest e SET e.elevationTime = :elevationTime, e.elevationStatus = :elevationStatus, e.elevationStatusMessage = :elevationStatusMessage, e.status = :status WHERE e.requestId = :requestId")
     void updateOnSuccess(
             @Param("requestId") String requestId,
-            @Param("time") LocalDateTime time,
-            @Param("status") String status,
-            @Param("msg") String msg,
-            @Param("finalStatus") String finalStatus);
+            @Param("elevationTime") LocalDateTime elevationTime,
+            @Param("elevationStatus") String elevationStatus,
+            @Param("elevationStatusMessage") String elevationStatusMessage,
+            @Param("status") String status);
 
     @Modifying
     @Transactional
-    @Query("UPDATE ServerElevationRequest e SET e.elevationStatus = :elevationStatus, e.elevationStatusMessage = :msg, e.status = :status WHERE e.requestId = :requestId")
+    @Query("UPDATE ServerElevationRequest e SET e.elevationStatus = :elevationStatus, e.elevationStatusMessage = :elevationStatusMessage, e.status = :status WHERE e.requestId = :requestId")
     void updateOnFailure(
             @Param("requestId") String requestId,
             @Param("elevationStatus") String elevationStatus,

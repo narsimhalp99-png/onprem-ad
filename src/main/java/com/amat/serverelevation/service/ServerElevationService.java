@@ -12,7 +12,7 @@ import com.amat.serverelevation.DTO.getServerElevationRequests;
 import com.amat.serverelevation.DTO.*;
 import com.amat.approvalmanagement.entity.ApprovalDetails;
 import com.amat.serverelevation.entity.ServerElevationRequest;
-import com.amat.serverelevation.repository.ApprovalDetailsRepository;
+import com.amat.approvalmanagement.repository.ApprovalDetailsRepository;
 import com.amat.serverelevation.repository.ServerElevationRepository;
 import com.amat.serverelevation.repository.ServerElevationRequestRepository;
 import com.amat.serverelevation.util.ServerElevationUtils;
@@ -23,8 +23,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.data.jpa.repository.Modifying;
-import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -361,6 +359,7 @@ public class ServerElevationService {
                             "Success",
                             "Elevated Successfully",
                             "Completed");
+
                     results.add(new SubmitResponse(server, "Success", requestId, null, "Elevated Successfully"));
                 } else {
                     serverRepo.updateOnFailure(requestId, "Failed", elevationErr != null ? elevationErr : "Elevation Failed", "Completed");

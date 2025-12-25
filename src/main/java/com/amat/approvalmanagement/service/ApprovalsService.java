@@ -2,14 +2,12 @@ package com.amat.approvalmanagement.service;
 
 import com.amat.accessmanagement.service.RoleService;
 import com.amat.admanagement.service.GroupsService;
-import com.amat.approvalmanagement.dto.ApiResponse;
 import com.amat.approvalmanagement.dto.ApprovalActionRequest;
 import com.amat.approvalmanagement.dto.ApprovalDetailsFilterDTO;
 import com.amat.approvalmanagement.enums.ApprovalStatus;
 import com.amat.approvalmanagement.repository.ApprovalDetailsFilterRepository;
 import com.amat.approvalmanagement.entity.ApprovalDetails;
-import com.amat.serverelevation.entity.ServerElevationRequest;
-import com.amat.serverelevation.repository.ApprovalDetailsRepository;
+import com.amat.approvalmanagement.repository.ApprovalDetailsRepository;
 import com.amat.serverelevation.repository.ServerElevationRepository;
 import com.amat.serverelevation.repository.ServerElevationRequestRepository;
 import com.amat.serverelevation.service.ServerElevationService;
