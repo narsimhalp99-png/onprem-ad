@@ -1,9 +1,13 @@
 package com.amat.commonutils;
 
+import com.amat.accessmanagement.dto.UserPreferencesRequest;
+import com.amat.accessmanagement.dto.UserPreferencesResponse;
 import com.amat.accessmanagement.dto.UserSearchResponseDTO;
 import com.amat.accessmanagement.entity.UserEntity;
+import com.amat.accessmanagement.entity.UserPreferences;
 import com.amat.accessmanagement.service.SearchUsersService;
 import com.amat.accessmanagement.service.UserEnrollmentService;
+import com.amat.accessmanagement.service.UserPreferencesService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +27,9 @@ public class CommonsController {
 
     @Autowired
     SearchUsersService searchUsersService;
+
+    @Autowired
+    UserPreferencesService userPreferencesService;
 
     @GetMapping("/getLoggedInUserDetails")
     public ResponseEntity<Object> getUser(
@@ -92,6 +99,39 @@ public class CommonsController {
         );
 
         return response;
+    }
+
+    @PostMapping("/user-preferences")
+    public ResponseEntity<Map<String, String>> updatePreferences(
+            @RequestBody UserPreferencesRequest req,
+            HttpServletRequest request
+    ) {
+        String employeeId = request.getHeader("employeeId");
+
+        log.info(
+                "Received create/update preferences request for employeeId={}, tiles={}",
+                employeeId,
+                req.getFavTiles()
+        );
+
+        userPreferencesService.createOrUpdatePreferences(employeeId, req.getFavTiles());
+
+        return ResponseEntity.ok(Map.of(
+                "message", "Preferences updated successfully"
+        ));
+    }
+
+    @GetMapping("/user-preferences")
+    public ResponseEntity<UserPreferencesResponse> getPreferences(
+            HttpServletRequest request
+    ) {
+        String employeeId = request.getHeader("employeeId");
+
+        log.info("Received get preferences request for employeeId={}", employeeId);
+
+        return ResponseEntity.ok(
+                userPreferencesService.getPreferences(employeeId)
+        );
     }
 
 }
