@@ -12,6 +12,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -204,5 +205,22 @@ public class UserEnrollmentController {
         );
 
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/encode")
+    public String encodePassword(@RequestParam String password) {
+
+        log.info("API HIT: encodePassword");
+
+        log.debug(
+                "Encoding password | length={}",
+                password != null ? password.length() : 0
+        );
+
+        String encodedPassword = new BCryptPasswordEncoder().encode(password);
+
+        log.info("Password encoded successfully");
+
+        return encodedPassword;
     }
 }

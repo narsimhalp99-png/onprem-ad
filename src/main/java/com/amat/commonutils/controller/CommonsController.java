@@ -31,22 +31,6 @@ public class CommonsController {
     @Autowired
     UserPreferencesService userPreferencesService;
 
-    @PostMapping("/encode")
-    public String encodePassword(@RequestParam String password) {
-
-        log.info("API HIT: encodePassword");
-
-        log.debug(
-                "Encoding password | length={}",
-                password != null ? password.length() : 0
-        );
-
-        String encodedPassword = new BCryptPasswordEncoder().encode(password);
-
-        log.info("Password encoded successfully");
-
-        return encodedPassword;
-    }
 
     @GetMapping("/getLoggedInUserDetails")
     public ResponseEntity<Object> getUser(
