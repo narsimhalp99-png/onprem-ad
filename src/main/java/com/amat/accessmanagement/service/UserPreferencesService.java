@@ -3,10 +3,9 @@ package com.amat.accessmanagement.service;
 
 
 import com.amat.accessmanagement.dto.UserPreferencesResponse;
-import com.amat.accessmanagement.entity.UserPreferences;
+import com.amat.commonutils.entity.UserPreferences;
 import com.amat.accessmanagement.repository.UserEnrollmentRepository;
 import com.amat.accessmanagement.repository.UserPreferencesRepository;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -19,6 +18,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -33,7 +33,8 @@ public class UserPreferencesService {
     @Transactional
     public void createOrUpdatePreferences(
             String employeeId,
-            List<String> newTiles
+            String addFavTiles,
+            String removeFavTiles
     ) {
         log.info("START :: Updating user preferences | employeeId={}", employeeId);
 
@@ -45,19 +46,21 @@ public class UserPreferencesService {
             );
         }
 
-        if (newTiles == null || newTiles.isEmpty()) {
-            log.warn("No new tiles provided | employeeId={}", employeeId);
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "At least one tile must be provided"
-            );
-        }
-
         try {
+            // 1. Validate user exists
+            if (!userEnrollmentRepository.findByEmployeeId(employeeId).isPresent()) {
+                log.warn("User not found in enrollment | employeeId={}", employeeId);
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "Invalid employeeId"
+                );
+            }
+
+            // 2. Fetch existing preferences or create new
             UserPreferences prefs = repo.findById(employeeId)
                     .orElseGet(() -> {
                         log.info(
-                                "No existing preferences found, creating new record | employeeId={}",
+                                "No existing preferences found, creating new | employeeId={}",
                                 employeeId
                         );
                         return UserPreferences.builder()
@@ -66,10 +69,11 @@ public class UserPreferencesService {
                                 .build();
                     });
 
-            Set<String> existingTiles = new HashSet<>();
+            Set<String> favTiles = new HashSet<>();
 
+            // 3. Load existing tiles
             if (prefs.getFavTiles() != null && !prefs.getFavTiles().isBlank()) {
-                existingTiles.addAll(
+                favTiles.addAll(
                         Arrays.stream(prefs.getFavTiles().split(";"))
                                 .map(String::trim)
                                 .filter(tile -> !tile.isEmpty())
@@ -77,14 +81,42 @@ public class UserPreferencesService {
                 );
             }
 
-            existingTiles.addAll(
-                    newTiles.stream()
-                            .map(String::trim)
-                            .filter(tile -> !tile.isEmpty())
-                            .toList()
-            );
+            log.debug("Existing tiles | employeeId={} | tiles={}", employeeId, favTiles);
 
-            String updatedFavTiles = String.join(";", existingTiles);
+            // 4. Add new tiles
+            if (addFavTiles != null && !addFavTiles.isBlank()) {
+                Set<String> tilesToAdd = Arrays.stream(addFavTiles.split(";"))
+                        .map(String::trim)
+                        .filter(tile -> !tile.isEmpty())
+                        .collect(Collectors.toSet());
+
+                favTiles.addAll(tilesToAdd);
+
+                log.info(
+                        "Added tiles | employeeId={} | tiles={}",
+                        employeeId,
+                        tilesToAdd
+                );
+            }
+
+            // 5. Remove tiles
+            if (removeFavTiles != null && !removeFavTiles.isBlank()) {
+                Set<String> tilesToRemove = Arrays.stream(removeFavTiles.split(";"))
+                        .map(String::trim)
+                        .filter(tile -> !tile.isEmpty())
+                        .collect(Collectors.toSet());
+
+                favTiles.removeAll(tilesToRemove);
+
+                log.info(
+                        "Removed tiles | employeeId={} | tiles={}",
+                        employeeId,
+                        tilesToRemove
+                );
+            }
+
+            // 6. Persist
+            String updatedFavTiles = String.join(";", favTiles);
 
             prefs.setFavTiles(updatedFavTiles);
             prefs.setUpdatedAt(LocalDateTime.now());
@@ -92,15 +124,14 @@ public class UserPreferencesService {
             repo.save(prefs);
 
             log.info(
-                    "SUCCESS :: Preferences updated | employeeId={}, favTiles={}",
+                    "SUCCESS :: Preferences updated | employeeId={} | favTiles={}",
                     employeeId,
                     updatedFavTiles
             );
 
         } catch (ResponseStatusException ex) {
-            // already meaningful
             log.error(
-                    "BUSINESS ERROR :: Failed to update preferences | employeeId={} | reason={}",
+                    "BUSINESS ERROR :: Preference update failed | employeeId={} | reason={}",
                     employeeId,
                     ex.getReason()
             );
@@ -108,7 +139,7 @@ public class UserPreferencesService {
 
         } catch (Exception ex) {
             log.error(
-                    "SYSTEM ERROR :: Unexpected error while updating preferences | employeeId={}",
+                    "SYSTEM ERROR :: Unexpected error updating preferences | employeeId={}",
                     employeeId,
                     ex
             );
@@ -120,6 +151,7 @@ public class UserPreferencesService {
             log.info("END :: Updating user preferences | employeeId={}", employeeId);
         }
     }
+
 
 
     @Transactional(readOnly = true)

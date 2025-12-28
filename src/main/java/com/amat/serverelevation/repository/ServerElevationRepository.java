@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import java.time.LocalDateTime;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
@@ -48,4 +49,7 @@ public interface ServerElevationRepository extends JpaRepository<ServerElevation
     """)
     int updateApprovalId(@Param("requestId") String requestId,
                          @Param("newApprovalId") String newApprovalId);
+
+
+    Optional<ServerElevationRequest> findByRequestId(String requestId);
 }

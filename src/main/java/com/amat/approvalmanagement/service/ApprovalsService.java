@@ -1,5 +1,6 @@
 package com.amat.approvalmanagement.service;
 
+import com.amat.accessmanagement.repository.UserPreferencesRepository;
 import com.amat.accessmanagement.service.RoleService;
 import com.amat.admanagement.service.GroupsService;
 import com.amat.approvalmanagement.dto.ApprovalActionRequest;
@@ -9,6 +10,8 @@ import com.amat.approvalmanagement.enums.ApprovalStatus;
 import com.amat.approvalmanagement.repository.ApprovalDetailsFilterRepository;
 import com.amat.approvalmanagement.entity.ApprovalDetails;
 import com.amat.approvalmanagement.repository.ApprovalDetailsRepository;
+import com.amat.commonutils.entity.UserPreferences;
+import com.amat.commonutils.utis.CommonUtils;
 import com.amat.serverelevation.repository.ServerElevationRepository;
 import com.amat.serverelevation.repository.ServerElevationRequestRepository;
 import com.amat.serverelevation.service.ServerElevationService;
@@ -49,10 +52,10 @@ public class ApprovalsService {
     RoleService roleService;
 
     @Autowired
-    ServerElevationUtils utils;
+    UserPreferencesRepository userPreferencesRepository;
 
     @Autowired
-    GroupsService groupsService;
+    CommonUtils commonUtils;
 
     @Autowired
     ServerElevationService serverElevationService;
@@ -449,10 +452,42 @@ public class ApprovalsService {
                 req.getNewApprover()
         );
 
+
+        String approverEmpId = req.getNewApprover();
+        String finalApprover = approverEmpId;
+
+        // Fetch preferences of owner
+        Optional<UserPreferences> ownerPrefsOpt =
+                userPreferencesRepository.findById(approverEmpId);
+
+        if (ownerPrefsOpt.isPresent()) {
+            UserPreferences prefs = ownerPrefsOpt.get();
+
+            if (commonUtils.isUserOutOfOffice(prefs)) {
+                if (prefs.getOooApprover() != null && !prefs.getOooApprover().isBlank()) {
+                    log.info(
+                            "Owner {} is OOO ({} to {}). Reassigning approval to alternate approver {}",
+                            approverEmpId,
+                            prefs.getOooStartDate(),
+                            prefs.getOooEndDate(),
+                            prefs.getOooApprover()
+                    );
+
+                    finalApprover = prefs.getOooApprover();
+                } else {
+                    log.warn(
+                            "Owner {} is OOO but no alternate approver configured. Using original approver.",
+                            approverEmpId
+                    );
+                }
+            }
+        }
+
+
         // 3. Create new approval entry
         ApprovalDetails newApproval = ApprovalDetails.builder()
                 .requestId(existing.getRequestId())
-                .approver(req.getNewApprover())
+                .approver(finalApprover)
                 .workItemName(existing.getWorkItemName())
                 .workItemType(existing.getWorkItemType())
                 .approvalLevel(existing.getApprovalLevel())

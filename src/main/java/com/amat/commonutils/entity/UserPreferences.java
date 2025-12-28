@@ -1,4 +1,4 @@
-package com.amat.accessmanagement.entity;
+package com.amat.commonutils.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -32,4 +32,17 @@ public class UserPreferences {
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
+
+    @Column(name = "ooo_enabled")
+    private Boolean oooEnabled;
+
+    @Column(name = "ooo_start_date")
+    private LocalDateTime oooStartDate;
+
+    @Column(name = "ooo_end_date")
+    private LocalDateTime oooEndDate;
+
+    @Column(name = "ooo_approver")
+    private String oooApprover;
+
 }

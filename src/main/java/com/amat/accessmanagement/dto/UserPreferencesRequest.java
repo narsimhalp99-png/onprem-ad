@@ -6,5 +6,6 @@ import java.util.List;
 
 @Data
 public class UserPreferencesRequest {
-    private List<String> favTiles;
+    private String addFavTiles;
+    private String removeFavTiles;
 }

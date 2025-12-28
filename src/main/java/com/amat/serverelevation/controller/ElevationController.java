@@ -163,4 +163,27 @@ public class ElevationController {
         return response;
     }
 
+    @PostMapping("/cancel-request")
+    public ResponseEntity<Map<String, String>> cancelRequest(
+            @RequestBody CancelServerElevationRequest req,
+            HttpServletRequest request
+    ) {
+        String loggedInUser = request.getHeader("employeeId");
+
+        log.info(
+                "Cancel request API called | requestId={} | user={}",
+                req.getRequestId(),
+                loggedInUser
+        );
+
+        serverElevationService.cancelRequest(req, loggedInUser);
+
+        return ResponseEntity.ok(Map.of(
+                "status", "SUCCESS",
+                "message", "Server elevation request cancelled successfully"
+        ));
+    }
+
+
+
 }

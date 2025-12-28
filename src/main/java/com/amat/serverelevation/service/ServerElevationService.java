@@ -2,12 +2,15 @@ package com.amat.serverelevation.service;
 
 import com.amat.accessmanagement.entity.UserEntity;
 import com.amat.accessmanagement.repository.UserEnrollmentRepository;
+import com.amat.accessmanagement.repository.UserPreferencesRepository;
 import com.amat.accessmanagement.service.RoleService;
 import com.amat.admanagement.dto.*;
 import com.amat.admanagement.service.ComputerService;
 import com.amat.admanagement.service.GroupsService;
 import com.amat.admanagement.service.UserService;
 import com.amat.approvalmanagement.enums.ApprovalStatus;
+import com.amat.commonutils.entity.UserPreferences;
+import com.amat.commonutils.utis.CommonUtils;
 import com.amat.serverelevation.DTO.getServerElevationRequests;
 import com.amat.serverelevation.DTO.*;
 import com.amat.approvalmanagement.entity.ApprovalDetails;
@@ -28,6 +31,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -62,6 +66,12 @@ public class ServerElevationService {
 
     @Autowired
     UserEnrollmentRepository userEnrollmentRepository;
+
+    @Autowired
+    UserPreferencesRepository userPreferencesRepository;
+
+    @Autowired
+    CommonUtils commonUtils;
 
     @Value("${spring.ldap.base:''}")
     String defaultBase;
@@ -366,10 +376,41 @@ public class ServerElevationService {
                     results.add(new SubmitResponse(server, "Failed", requestId, null, elevationErr != null ? elevationErr : "Elevation Failed"));
                 }
             } else {
+                String approverEmpId = validation.getOwnerDetails().getOwnerEmpID();
+                String finalApprover = approverEmpId;
+
+                // Fetch preferences of owner
+                Optional<UserPreferences> ownerPrefsOpt =
+                        userPreferencesRepository.findById(approverEmpId);
+
+                if (ownerPrefsOpt.isPresent()) {
+                    UserPreferences prefs = ownerPrefsOpt.get();
+
+                    if (commonUtils.isUserOutOfOffice(prefs)) {
+                        if (prefs.getOooApprover() != null && !prefs.getOooApprover().isBlank()) {
+                            log.info(
+                                    "Owner {} is OOO ({} to {}). Reassigning approval to alternate approver {}",
+                                    approverEmpId,
+                                    prefs.getOooStartDate(),
+                                    prefs.getOooEndDate(),
+                                    prefs.getOooApprover()
+                            );
+
+                            finalApprover = prefs.getOooApprover();
+                        } else {
+                            log.warn(
+                                    "Owner {} is OOO but no alternate approver configured. Using original approver.",
+                                    approverEmpId
+                            );
+                        }
+                    }
+                }
+
+
                 // Approval required: create approval_details row (DB will generate ApprovalID)
                 ApprovalDetails approval = ApprovalDetails.builder()
                         .requestId(requestId)
-                        .approver(validation.getOwnerDetails().getOwnerEmpID())
+                        .approver(finalApprover)
                         .workItemName(server + " (Duration: " + entry.getDurationInHours() + " Hours)")
                         .workItemType("SERVER-ELEVATION")
                         .approvalStatus(ApprovalStatus.Pending_Approval.name())
@@ -386,7 +427,9 @@ public class ServerElevationService {
                 }
 
                 serverRepo.updateStatusAndApprover(requestId, ApprovalStatus.Pending_Approval.name(), approvalId);
-                results.add(new SubmitResponse(server, ApprovalStatus.Pending_Approval.name(), requestId, approvalId, "Waiting for Owner Approval"));
+                results.add(new SubmitResponse(server, ApprovalStatus.Pending_Approval.name(), requestId, approvalId, finalApprover.equals(approverEmpId)
+                        ? "Waiting for Owner Approval"
+                        : "Waiting for Alternate Approver Approval"));
             }
         }
 
@@ -535,5 +578,105 @@ public class ServerElevationService {
 
         log.info("END performPostApprovalDenyActionServerElevation | requestId={}", requestId);
     }
+
+    @Transactional
+    public void cancelRequest(
+            CancelServerElevationRequest req,
+            String loggedInUser
+    ) {
+
+        log.info(
+                "START :: Cancel server elevation | requestId={} | user={}",
+                req.getRequestId(),
+                loggedInUser
+        );
+
+        if (req.getRequestId() == null || req.getRequestId().isBlank()) {
+            log.warn("Invalid requestId");
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "RequestId must not be empty"
+            );
+        }
+
+        try {
+            // 1. Fetch server elevation request
+            ServerElevationRequest request = serverRepo
+                    .findByRequestId(req.getRequestId())
+                    .orElseThrow(() -> {
+                        log.warn("Server elevation request not found | requestId={}", req.getRequestId());
+                        return new ResponseStatusException(
+                                HttpStatus.NOT_FOUND,
+                                "Server elevation request not found"
+                        );
+                    });
+
+            // 2. Validate status
+            if (!"Pending_Approval".equalsIgnoreCase(request.getStatus())) {
+                log.warn(
+                        "Cancel not allowed | requestId={} | status={}",
+                        req.getRequestId(),
+                        request.getStatus()
+                );
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "Only Pending_Approval requests can be cancelled"
+                );
+            }
+
+            // 3. Update server_elevation_requests
+            request.setStatus(ApprovalStatus.Cancelled.name());
+            request.setElevationStatusMessage(
+                    "Request cancelled by " + loggedInUser +
+                            (req.getComment() != null ? " : " + req.getComment() : "")
+            );
+
+            serverRepo.save(request);
+
+            log.info(
+                    "Server elevation request marked CANCELLED | requestId={}",
+                    req.getRequestId()
+            );
+
+            // 4. Update approval_details
+            int updatedRows = approvalRepo.cancelApprovals(
+                    req.getRequestId(),
+                    "Request cancelled by " + loggedInUser
+            );
+
+
+
+            log.info(
+                    "Approval records cancelled | requestId={} | rowsUpdated={}",
+                    req.getRequestId(),
+                    updatedRows
+            );
+
+        } catch (ResponseStatusException ex) {
+            log.error(
+                    "BUSINESS ERROR :: Cancel request failed | requestId={} | reason={}",
+                    req.getRequestId(),
+                    ex.getReason()
+            );
+            throw ex;
+
+        } catch (Exception ex) {
+            log.error(
+                    "SYSTEM ERROR :: Cancel request failed | requestId={}",
+                    req.getRequestId(),
+                    ex
+            );
+            throw new ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Failed to cancel server elevation request"
+            );
+        } finally {
+            log.info(
+                    "END :: Cancel server elevation | requestId={}",
+                    req.getRequestId()
+            );
+        }
+    }
+
 
 }
