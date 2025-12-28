@@ -41,13 +41,6 @@ public class ApprovalDetailsRequestSpecification {
                 ));
             }
 
-            if (filter.getApproverName() != null && !filter.getApproverName().isEmpty()) {
-                log.debug("Applying approverName filter | approverNameLike={}", filter.getApproverName());
-                predicates.add(cb.like(
-                        cb.lower(root.get("approverName")),
-                        "%" + filter.getApproverName().toLowerCase() + "%"
-                ));
-            }
 
             if (filter.getApprovalStatus() != null && !filter.getApprovalStatus().isEmpty()) {
                 log.debug("Applying approvalStatus filter | status={}", filter.getApprovalStatus());

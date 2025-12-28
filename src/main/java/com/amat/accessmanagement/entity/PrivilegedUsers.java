@@ -1,4 +1,4 @@
-package com.amat.admanagement.model;
+package com.amat.accessmanagement.entity;
 
 
 

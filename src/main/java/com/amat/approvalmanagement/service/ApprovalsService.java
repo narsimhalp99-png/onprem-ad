@@ -431,7 +431,7 @@ public class ApprovalsService {
         existing.setApprovalStatus(ApprovalStatus.ReAssigned.name());
         existing.setApproverComment(
                 String.format(
-                        "Reassigned from '%s' to '%s' by %s. %s",
+                        "Reassigned from '%s' to '%s' by %s. Comment: %s",
                         oldApprover,
                         req.getNewApprover(),
                         loggedInUser,
@@ -453,12 +453,11 @@ public class ApprovalsService {
         ApprovalDetails newApproval = ApprovalDetails.builder()
                 .requestId(existing.getRequestId())
                 .approver(req.getNewApprover())
-                .approverName(req.getNewApproverName())
                 .workItemName(existing.getWorkItemName())
                 .workItemType(existing.getWorkItemType())
                 .approvalLevel(existing.getApprovalLevel())
-                .approverComment(req.getComment())
                 .approvalStatus(ApprovalStatus.Pending_Approval.name())
+                .requestee(existing.getRequestee())
                 .approvalRequestDate(LocalDateTime.now())
                 .build();
 

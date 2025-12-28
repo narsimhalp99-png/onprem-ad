@@ -1,7 +1,7 @@
 package com.amat.admanagement.service;
 
-import com.amat.admanagement.model.PrivilegedUsers;
-import com.amat.admanagement.repository.PrivilegedUsersRepository;
+import com.amat.accessmanagement.entity.PrivilegedUsers;
+import com.amat.commonutils.repository.PrivilegedUsersRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.userdetails.*;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;

@@ -4,6 +4,7 @@ package com.amat.accessmanagement.service;
 
 import com.amat.accessmanagement.dto.UserPreferencesResponse;
 import com.amat.accessmanagement.entity.UserPreferences;
+import com.amat.accessmanagement.repository.UserEnrollmentRepository;
 import com.amat.accessmanagement.repository.UserPreferencesRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -12,7 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
-
+import java.util.Optional;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -25,6 +26,9 @@ public class UserPreferencesService {
 
     @Autowired
     UserPreferencesRepository repo;
+
+    @Autowired
+    UserEnrollmentRepository userEnrollmentRepository;
 
     @Transactional
     public void createOrUpdatePreferences(
@@ -119,56 +123,57 @@ public class UserPreferencesService {
 
 
     @Transactional(readOnly = true)
-    public UserPreferencesResponse getPreferences(String employeeId) {
+    public Object getPreferences(String employeeId) {
 
         log.info("Fetching preferences for employeeId={}", employeeId);
 
-        if (employeeId == null || employeeId.isBlank()) {
-            log.warn("Invalid employeeId received while fetching preferences");
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "EmployeeId must not be empty"
+        boolean userExists = userEnrollmentRepository
+                .findByEmployeeId(employeeId)
+                .isPresent();
+
+        if (!userExists) {
+            log.warn("User not found in enrollment repository, employeeId={}", employeeId);
+
+            return new UserPreferencesResponse(
+                    employeeId,
+                    List.of(),
+                    "User not found"
             );
         }
 
-        try {
-            UserPreferences prefs = repo.findById(employeeId)
-                    .orElseThrow(() -> {
-                        log.warn("Preferences not found for employeeId={}", employeeId);
-                        return new ResponseStatusException(
-                                HttpStatus.NOT_FOUND,
-                                "Preferences not found"
-                        );
-                    });
 
-            List<String> tiles =
-                    (prefs.getFavTiles() == null || prefs.getFavTiles().isBlank())
-                            ? List.of()
-                            : Arrays.asList(prefs.getFavTiles().split(";"));
+        Optional<UserPreferences> optionalPrefs = repo.findById(employeeId);
 
-            log.info(
-                    "Preferences fetched successfully for employeeId={}, tilesCount={}",
+        if (optionalPrefs.isEmpty()) {
+            log.info("No preferences found for employeeId={}", employeeId);
+
+            return new UserPreferencesResponse(
                     employeeId,
-                    tiles.size()
-            );
-
-            return new UserPreferencesResponse(employeeId, tiles);
-
-        } catch (ResponseStatusException ex) {
-            throw ex;
-        } catch (Exception ex) {
-            log.error(
-                    "Error while fetching preferences for employeeId={}: {}",
-                    employeeId,
-                    ex.getMessage(),
-                    ex
-            );
-            throw new ResponseStatusException(
-                    HttpStatus.INTERNAL_SERVER_ERROR,
-                    "Failed to fetch preferences"
+                    List.of(),
+                    "User preferences not found"
             );
         }
+
+        UserPreferences prefs = optionalPrefs.get();
+
+        List<String> tiles =
+                (prefs.getFavTiles() == null || prefs.getFavTiles().isBlank())
+                        ? List.of()
+                        : Arrays.asList(prefs.getFavTiles().split(";"));
+
+        log.info(
+                "Preferences fetched successfully for employeeId={}, tiles={}",
+                employeeId,
+                tiles
+        );
+
+        return new UserPreferencesResponse(
+                employeeId,
+                tiles,
+                "User preferences retrieved successfully"
+        );
     }
+
 
 }
 

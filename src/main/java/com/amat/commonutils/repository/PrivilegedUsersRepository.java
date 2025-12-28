@@ -1,7 +1,8 @@
-package com.amat.admanagement.repository;
+package com.amat.commonutils.repository;
 
 
-import com.amat.admanagement.model.PrivilegedUsers;
+
+import com.amat.accessmanagement.entity.PrivilegedUsers;
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
 

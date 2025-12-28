@@ -1,10 +1,9 @@
-package com.amat.commonutils;
+package com.amat.commonutils.controller;
 
 import com.amat.accessmanagement.dto.UserPreferencesRequest;
 import com.amat.accessmanagement.dto.UserPreferencesResponse;
 import com.amat.accessmanagement.dto.UserSearchResponseDTO;
 import com.amat.accessmanagement.entity.UserEntity;
-import com.amat.accessmanagement.entity.UserPreferences;
 import com.amat.accessmanagement.service.SearchUsersService;
 import com.amat.accessmanagement.service.UserEnrollmentService;
 import com.amat.accessmanagement.service.UserPreferencesService;
@@ -13,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -30,6 +30,23 @@ public class CommonsController {
 
     @Autowired
     UserPreferencesService userPreferencesService;
+
+    @PostMapping("/encode")
+    public String encodePassword(@RequestParam String password) {
+
+        log.info("API HIT: encodePassword");
+
+        log.debug(
+                "Encoding password | length={}",
+                password != null ? password.length() : 0
+        );
+
+        String encodedPassword = new BCryptPasswordEncoder().encode(password);
+
+        log.info("Password encoded successfully");
+
+        return encodedPassword;
+    }
 
     @GetMapping("/getLoggedInUserDetails")
     public ResponseEntity<Object> getUser(
@@ -122,7 +139,7 @@ public class CommonsController {
     }
 
     @GetMapping("/user-preferences")
-    public ResponseEntity<UserPreferencesResponse> getPreferences(
+    public Object getPreferences(
             HttpServletRequest request
     ) {
         String employeeId = request.getHeader("employeeId");

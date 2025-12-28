@@ -10,5 +10,6 @@ import java.util.List;
 public class UserPreferencesResponse {
     private String employeeId;
     private List<String> favTiles;
+    private String message;
 }
 

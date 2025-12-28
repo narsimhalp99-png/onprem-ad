@@ -11,5 +11,4 @@ public class ReassignApprovalRequest {
     private UUID approvalId;
     private String comment;
     private String newApprover;
-    private String newApproverName;
 }

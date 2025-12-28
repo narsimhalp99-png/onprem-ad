@@ -41,7 +41,6 @@ public class ApprovalDetails {
     @Column(nullable = false)
     private String approver;
 
-    private String approverName;
 
     @Column(length = 500)
     private String workItemName;
