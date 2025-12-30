@@ -486,13 +486,14 @@ public class ApprovalsService {
 
         // 3. Create new approval entry
         ApprovalDetails newApproval = ApprovalDetails.builder()
-                .requestId(existing.getRequestId())
+                .requestId(existing.getRequestId().toUpperCase())
                 .approver(finalApprover)
                 .workItemName(existing.getWorkItemName())
                 .workItemType(existing.getWorkItemType())
                 .approvalLevel(existing.getApprovalLevel())
                 .approvalStatus(ApprovalStatus.Pending_Approval.name())
                 .requestee(existing.getRequestee())
+                .requestor(existing.getRequestor())
                 .approvalRequestDate(LocalDateTime.now())
                 .build();
 
@@ -520,7 +521,7 @@ public class ApprovalsService {
             try {
                 updatedRows = serverRepo.updateApprovalId(
                         newApproval.getRequestId(),
-                        String.valueOf(newApproval.getApprovalId())
+                        String.valueOf(newApproval.getApprovalId()).toUpperCase()
                 );
 
                 if (updatedRows > 0) {

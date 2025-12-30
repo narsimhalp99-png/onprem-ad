@@ -3,11 +3,16 @@ package com.amat.accessmanagement.entity;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
-
+@Builder
 @Data
 @Entity
+@AllArgsConstructor
+@NoArgsConstructor
 @Table(name = "UserRoleMapping",
         uniqueConstraints = @UniqueConstraint(
                 name = "UQ_UserRole_Employee_Role",

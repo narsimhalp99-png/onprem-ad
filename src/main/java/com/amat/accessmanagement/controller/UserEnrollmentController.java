@@ -1,10 +1,10 @@
 package com.amat.accessmanagement.controller;
 
-import com.amat.accessmanagement.dto.AssignRoleRequest;
+import com.amat.accessmanagement.dto.UpdateRolesRequest;
 import com.amat.accessmanagement.entity.UserEntity;
-import com.amat.accessmanagement.entity.UserRoleMapping;
 import com.amat.accessmanagement.service.RoleService;
 import com.amat.accessmanagement.service.UserEnrollmentService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -159,52 +159,20 @@ public class UserEnrollmentController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/{employeeId}/roles/assign")
-    public ResponseEntity<Map<String, Object>> assignRole(
+
+    @PostMapping("/{employeeId}/roles")
+    public ResponseEntity<Map<String, String>> updateUserRoles(
             @PathVariable String employeeId,
-            @RequestBody AssignRoleRequest req) {
+            @RequestBody UpdateRolesRequest req
+    ) {
 
-        log.info(
-                "API HIT: assignRole | employeeId={} | roleId={}",
-                employeeId,
-                req.getRoleId()
+        log.info("Received role update request | employeeId={}", employeeId);
+
+        roleSvc.updateRoles(employeeId, req);
+
+        return ResponseEntity.ok(
+                Map.of("message", "Roles updated successfully")
         );
-
-        UserRoleMapping mapping = roleSvc.assignRole(employeeId, req);
-
-        log.info(
-                "Role assigned successfully | employeeId={} | roleId={}",
-                employeeId,
-                req.getRoleId()
-        );
-
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(Map.of(
-                        "message", "Role assigned successfully"
-                ));
-    }
-
-    @PatchMapping("/{employeeId}/roles/remove")
-    public ResponseEntity<Void> revokeRole(
-            @PathVariable String employeeId,
-            @RequestBody AssignRoleRequest req) {
-
-        log.info(
-                "API HIT: revokeRole | employeeId={} | roleId={}",
-                employeeId,
-                req.getRoleId()
-        );
-
-        roleSvc.revokeRole(employeeId, req.getRoleId());
-
-        log.info(
-                "Role revoked successfully | employeeId={} | roleId={}",
-                employeeId,
-                req.getRoleId()
-        );
-
-        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/encode")

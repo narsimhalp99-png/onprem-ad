@@ -1,6 +1,6 @@
 package com.amat.approvalmanagement.dto;
 
-import com.amat.approvalmanagement.enums.ApprovalStatus;
+
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 

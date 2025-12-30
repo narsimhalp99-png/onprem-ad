@@ -26,7 +26,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.data.repository.query.Param;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
@@ -318,7 +317,7 @@ public class ServerElevationService {
             ServerElevationRequest entity = ServerElevationRequest.builder()
                     .requestedBy(employeeId)
                     .serverName(server)
-                    .requestId(guid.toString())
+                    .requestId(guid.toString().toUpperCase())
                     .durationInHours(entry.getDurationInHours())
                     .requestorComment(request.getComment())
                     .status("In-Progress")
@@ -364,11 +363,11 @@ public class ServerElevationService {
                 if (elevationSuccess) {
                     // Update DB row: elevation success
                     serverRepo.updateOnSuccess(
-                            requestId,
+                            requestId.toUpperCase(),
                             LocalDateTime.now(),
                             "Success",
                             "Elevated Successfully",
-                            "Completed");
+                            ApprovalStatus.In_Progress.name());
 
                     results.add(new SubmitResponse(server, "Success", requestId, null, "Elevated Successfully"));
                 } else {
@@ -416,7 +415,9 @@ public class ServerElevationService {
                         .approvalStatus(ApprovalStatus.Pending_Approval.name())
                         .approvalLevel(1)
                         .requestee(employeeId)
+                        .requestor(employeeId)
                         .build();
+
 
                 approvalRepo.save(approval);
                 approvalRepo.flush();
@@ -426,8 +427,8 @@ public class ServerElevationService {
                     approvalId = String.valueOf(approval.getApprovalId());
                 }
 
-                serverRepo.updateStatusAndApprover(requestId, ApprovalStatus.Pending_Approval.name(), approvalId);
-                results.add(new SubmitResponse(server, ApprovalStatus.Pending_Approval.name(), requestId, approvalId, finalApprover.equals(approverEmpId)
+                serverRepo.updateStatusAndApprover(requestId, ApprovalStatus.Pending_Approval.name(), approvalId.toUpperCase());
+                results.add(new SubmitResponse(server, ApprovalStatus.Pending_Approval.name(), requestId, approvalId.toUpperCase(), finalApprover.equals(approverEmpId)
                         ? "Waiting for Owner Approval"
                         : "Waiting for Alternate Approver Approval"));
             }
@@ -473,7 +474,7 @@ public class ServerElevationService {
 
         Page<ServerElevationRequest> pageData = serverElevationRequestRepository.findAll(spec, pageable);
 
-        // 🔽 Sorting by approval date if approval exists
+        //  Sorting by approval date if approval exists
         List<String> requestIds = pageData.getContent().stream()
                 .map(ServerElevationRequest::getRequestId)
                 .toList();

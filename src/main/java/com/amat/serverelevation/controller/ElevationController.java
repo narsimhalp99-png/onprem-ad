@@ -1,16 +1,16 @@
 package com.amat.serverelevation.controller;
 
+import com.amat.accessmanagement.service.RoleService;
 import com.amat.serverelevation.DTO.getServerElevationRequests;
 import com.amat.serverelevation.DTO.*;
-import com.amat.serverelevation.entity.ServerElevationRequest;
 import com.amat.serverelevation.service.ServerElevationService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,6 +24,9 @@ public class ElevationController {
 
     @Autowired
     ServerElevationService serverElevationService;
+
+    @Autowired
+    RoleService roleService;
 
     @GetMapping("/fetchServerDetails")
     public ResponseEntity<ServerElevationResponse> validateServerElevation(
@@ -175,7 +178,18 @@ public class ElevationController {
                 req.getRequestId(),
                 loggedInUser
         );
+        boolean isAuthorizedToCancel = roleService.hasRole(loggedInUser, "ServerElevation-Administrator");
+        log.debug("Accessibility check | user={} | isAdmin={}", loggedInUser, isAuthorizedToCancel);
 
+        if (!isAuthorizedToCancel) {
+            log.warn("Access denied | user={}", loggedInUser);
+            return ResponseEntity
+                    .status(HttpStatus.FORBIDDEN)
+                    .body(Map.of(
+                            "status", "FAILED",
+                            "message", "Access Denied: You are not authorized to cancel this request"
+                    ));
+        }
         serverElevationService.cancelRequest(req, loggedInUser);
 
         return ResponseEntity.ok(Map.of(

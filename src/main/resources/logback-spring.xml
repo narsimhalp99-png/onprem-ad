@@ -21,7 +21,8 @@
             <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
-
+    <logger name="com.amat" level="DEBUG"/>
+    <logger name="com.amat" level="TRACE"/>
     <root level="INFO">
         <appender-ref ref="FILE"/>
         <appender-ref ref="CONSOLE"/>

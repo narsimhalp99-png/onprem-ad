@@ -3,6 +3,7 @@ package com.amat.accessmanagement.entity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -25,7 +26,7 @@ public class UserEntity {
     private String organization;
     private String subOrganization;
     private String title;
-    private Long managerEmpId;
+    private String managerEmpId;
     private Boolean isActive;
 
     @Column(
@@ -39,7 +40,8 @@ public class UserEntity {
     private OffsetDateTime updatedAt;
 
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
-    @JsonManagedReference
+    @JsonIgnore
+//    @JsonManagedReference
     private List<UserRoleMapping> roles;
 
     @JsonIgnore
@@ -65,6 +67,14 @@ public class UserEntity {
         if (roles == null) return null;
         return roles.stream()
                 .filter(UserRoleMapping::getAssignedRoleStatus)
+                .toList();
+    }
+    @Transient
+    @JsonProperty("roles")
+    public List<String> getRoleNames() {
+        if (roles == null) return List.of();
+        return roles.stream()
+                .map(UserRoleMapping::getAssignedRoleId)
                 .toList();
     }
 }
