@@ -463,7 +463,20 @@ public class ApprovalsService {
                             "Approval not found"
                     );
                 });
+        if (!ApprovalStatus.Pending_Approval.name().equalsIgnoreCase(existing.getApprovalStatus())) {
 
+            log.warn(
+                    "Reassignment blocked | approvalId={} | currentStatus={} | initiatedBy={}",
+                    existing.getApprovalId(),
+                    existing.getApprovalStatus(),
+                    loggedInUser
+            );
+
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Approval can be reassigned only when status is Pending_Approval"
+            );
+        }
         String oldApprover = existing.getApprover();
 
         log.info(
