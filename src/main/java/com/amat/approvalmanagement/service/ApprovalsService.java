@@ -5,6 +5,7 @@ import com.amat.accessmanagement.service.RoleService;
 import com.amat.admanagement.service.GroupsService;
 import com.amat.approvalmanagement.dto.ApprovalActionRequest;
 import com.amat.approvalmanagement.dto.ApprovalDetailsFilterDTO;
+import com.amat.approvalmanagement.dto.ApprovalWithRequestDTO;
 import com.amat.approvalmanagement.dto.ReassignApprovalRequest;
 import com.amat.approvalmanagement.enums.ApprovalStatus;
 import com.amat.approvalmanagement.repository.ApprovalDetailsFilterRepository;
@@ -12,6 +13,7 @@ import com.amat.approvalmanagement.entity.ApprovalDetails;
 import com.amat.approvalmanagement.repository.ApprovalDetailsRepository;
 import com.amat.commonutils.entity.UserPreferences;
 import com.amat.commonutils.utis.CommonUtils;
+import com.amat.serverelevation.entity.ServerElevationRequest;
 import com.amat.serverelevation.repository.ServerElevationRepository;
 import com.amat.serverelevation.repository.ServerElevationRequestRepository;
 import com.amat.serverelevation.service.ServerElevationService;
@@ -30,6 +32,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
+
 import org.springframework.web.server.ResponseStatusException;
 
 @Slf4j
@@ -113,11 +117,50 @@ public class ApprovalsService {
 
         log.debug("Specification built successfully | user={} | isSelf={}", loggedInUser, isSelf);
 
-        Object response = approvalRepo.findAll(spec, pageable);
+        Page<ApprovalDetails> pageData =
+                approvalRepo.findAll(spec, pageable);
 
+// Extract requestIds from approvals
+        List<String> requestIds = pageData.getContent()
+                .stream()
+                .map(ApprovalDetails::getRequestId)
+                .distinct()
+                .toList();
+
+//  Fetch request details in ONE query
+        List<ServerElevationRequest> requests =
+                serverElevationRequestRepository.findByRequestIdIn(requestIds);
+
+//  Map requestId → ServerElevationRequest
+        Map<String, ServerElevationRequest> requestMap =
+                requests.stream()
+                        .collect(Collectors.toMap(
+                                ServerElevationRequest::getRequestId,
+                                r -> r
+                        ));
+
+//  Map Approval → DTO
+        Page<ApprovalWithRequestDTO> responsePage =
+                pageData.map(approval -> ApprovalWithRequestDTO.builder()
+                        .approvalId(approval.getApprovalId())
+                        .approvalRequestDate(approval.getApprovalRequestDate())
+                        .requestId(approval.getRequestId())
+                        .approver(approval.getApprover())
+                        .workItemName(approval.getWorkItemName())
+                        .workItemType(approval.getWorkItemType())
+                        .approvalStatus(approval.getApprovalStatus())
+                        .approverComment(approval.getApproverComment())
+                        .approvalLevel(approval.getApprovalLevel())
+                        .approvalDate(approval.getApprovalDate())
+                        .requestee(approval.getRequestee())
+                        .requestDetails(
+                                requestMap.get(approval.getRequestId())
+                        )
+                        .build()
+                );
         log.info("END getApprovalDetails | user={} | resultReturned", loggedInUser);
+        return ResponseEntity.ok(responsePage);
 
-        return response;
     }
 
     @Transactional

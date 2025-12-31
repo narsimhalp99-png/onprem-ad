@@ -34,6 +34,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -472,18 +473,53 @@ public class ServerElevationService {
         Specification<ServerElevationRequest> spec =
                 ServerElevationRequestSpecification.applyFilters(serverEleReq, loggedInUser, isSelf);
 
-        Page<ServerElevationRequest> pageData = serverElevationRequestRepository.findAll(spec, pageable);
+        Page<ServerElevationRequest> pageData =
+                serverElevationRequestRepository.findAll(spec, pageable);
 
-        //  Sorting by approval date if approval exists
-        List<String> requestIds = pageData.getContent().stream()
+// Extract requestIds
+        List<String> requestIds = pageData.getContent()
+                .stream()
                 .map(ServerElevationRequest::getRequestId)
                 .toList();
 
+// Fetch approvals once
         List<ApprovalDetails> approvals =
                 approvalRepo.findByRequestIdInOrderByApprovalRequestDateDesc(requestIds);
 
+// Group approvals by requestId
+        Map<String, List<ApprovalDetails>> approvalMap =
+                approvals.stream()
+                        .collect(Collectors.groupingBy(ApprovalDetails::getRequestId));
+
+// Map Entity → DTO
+        Page<ServerElevationRequestResponse> responsePage =
+                pageData.map(req -> ServerElevationRequestResponse.builder()
+                        .id(req.getId())
+                        .requestId(req.getRequestId())
+                        .requestedBy(req.getRequestedBy())
+                        .serverName(req.getServerName())
+                        .durationInHours(req.getDurationInHours())
+                        .requestorComment(req.getRequestorComment())
+                        .requestDate(req.getRequestDate())
+                        .elevationTime(req.getElevationTime())
+                        .elevationStatus(req.getElevationStatus())
+                        .deElevationTime(req.getDeElevationTime())
+                        .deElevationStatus(req.getDeElevationStatus())
+                        .elevationStatusMessage(req.getElevationStatusMessage())
+                        .deElevationStatusMessage(req.getDeElevationStatusMessage())
+                        .status(req.getStatus())
+//                        .approvalId(req.getApprovalId())
+                        .approvalDetails(
+                                approvalMap.getOrDefault(req.getRequestId(), List.of())
+                        )
+                        .build()
+                );
+
+        return ResponseEntity.ok(responsePage);
+
+
         // No mapping required — just sorted correctly if present
-        return ResponseEntity.ok(pageData);
+//        return ResponseEntity.ok(pageData);
     }
 
     private String getOwnDisplayName(String ownerEmpId) {
