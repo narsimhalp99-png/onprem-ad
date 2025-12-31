@@ -26,44 +26,42 @@ public class SearchUsersService {
 
         log.info(
                 "ENTER searchUsers | searchString={} | page={} | size={}",
-                searchString,
-                page,
-                size
+                searchString, page, size
         );
 
         Pageable pageable = PageRequest.of(page, size);
 
+        boolean exact = true;
+        String processedSearch = searchString;
+
+        if (searchString != null && !searchString.isBlank()) {
+
+            if (searchString.endsWith("*")) {
+                exact = false;
+                processedSearch = searchString.substring(0, searchString.length() - 1);
+            }
+        }
+
         log.debug(
-                "Pageable created | page={} | size={}",
-                page,
-                size
+                "Search mode resolved | original={} | processed={} | exact={}",
+                searchString, processedSearch, exact
         );
 
         Page<UserEntity> users =
-                userEnrollmentRepository.searchUsers(searchString, pageable);
-
-        log.info(
-                "Users fetched from repository | totalElements={} | totalPages={} | returnedSize={}",
-                users.getTotalElements(),
-                users.getTotalPages(),
-                users.getNumberOfElements()
-        );
-
-        Page<UserSearchResponseDTO> response =
-                users.map(user ->
-                        new UserSearchResponseDTO(
-                                user.getEmployeeId(),
-                                user.getDisplayName(),
-                                user.getEmail()
-                        )
+                userEnrollmentRepository.searchUsers(
+                        processedSearch,
+                        exact,
+                        pageable
                 );
 
-        log.info(
-                "EXIT searchUsers | responseSize={}",
-                response.getNumberOfElements()
+        return users.map(user ->
+                new UserSearchResponseDTO(
+                        user.getEmployeeId(),
+                        user.getDisplayName(),
+                        user.getEmail()
+                )
         );
-
-        return response;
     }
+
 
 }

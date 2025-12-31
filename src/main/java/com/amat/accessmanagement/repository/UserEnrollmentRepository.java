@@ -22,13 +22,33 @@ public interface UserEnrollmentRepository extends JpaRepository<UserEntity, Stri
 
 
     @Query("""
-        SELECT u FROM UserEntity u
-        WHERE (:search IS NULL OR
-               LOWER(u.displayName) LIKE LOWER(CONCAT(:search, '%')) OR
-               LOWER(u.email) LIKE LOWER(CONCAT(:search, '%')) OR
-               LOWER(u.employeeId) LIKE LOWER(CONCAT(:search, '%')))
-        ORDER BY u.displayName
-    """)
-    Page<UserEntity> searchUsers(String search, Pageable pageable);
+    SELECT u FROM UserEntity u
+    WHERE (:search IS NULL OR
+        (
+            (:exact = true AND
+                (
+                    LOWER(u.displayName) = LOWER(:search) OR
+                    LOWER(u.email) = LOWER(:search) OR
+                    LOWER(u.employeeId) = LOWER(:search)
+                )
+            )
+            OR
+            (:exact = false AND
+                (
+                    LOWER(u.displayName) LIKE LOWER(CONCAT(:search, '%')) OR
+                    LOWER(u.email) LIKE LOWER(CONCAT(:search, '%')) OR
+                    LOWER(u.employeeId) LIKE LOWER(CONCAT(:search, '%'))
+                )
+            )
+        )
+    )
+    ORDER BY u.displayName
+""")
+    Page<UserEntity> searchUsers(
+            String search,
+            boolean exact,
+            Pageable pageable
+    );
+
 
 }
