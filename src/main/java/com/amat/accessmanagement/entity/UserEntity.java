@@ -6,7 +6,10 @@ import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.Data;
+import org.hibernate.annotations.Generated;
+import org.hibernate.annotations.GenerationTime;
 
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
@@ -29,19 +32,20 @@ public class UserEntity {
     private String managerEmpId;
     private Boolean isActive;
 
+    @Generated(GenerationTime.INSERT)
     @Column(
-            nullable = false,
+            name = "createdAt",
             updatable = false,
-            insertable = false,
-            columnDefinition =
-                    "DATETIME DEFAULT GETDATE()"
+            insertable = false
     )
-    private OffsetDateTime createdAt;
+    private LocalDateTime createdAt;
+
+
     private OffsetDateTime updatedAt;
 
+    //    @JsonManagedReference
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
     @JsonIgnore
-//    @JsonManagedReference
     private List<UserRoleMapping> roles;
 
     @JsonIgnore
