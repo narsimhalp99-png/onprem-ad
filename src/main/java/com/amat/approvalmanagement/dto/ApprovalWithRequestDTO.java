@@ -27,6 +27,6 @@ public class ApprovalWithRequestDTO {
     private LocalDateTime approvalDate;
     private String requestee;
 
-    private ServerElevationRequest requestDetails;
+    private Object requestDetails;
 }
 

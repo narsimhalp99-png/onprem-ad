@@ -120,44 +120,60 @@ public class ApprovalsService {
         Page<ApprovalDetails> pageData =
                 approvalRepo.findAll(spec, pageable);
 
-// Extract requestIds from approvals
-        List<String> requestIds = pageData.getContent()
+
+
+        List<String> serverElevationRequestIds = pageData.getContent()
                 .stream()
+                .filter(a -> "SERVER-ELEVATION".equalsIgnoreCase(a.getWorkItemType()))
                 .map(ApprovalDetails::getRequestId)
                 .distinct()
                 .toList();
 
-//  Fetch request details in ONE query
-        List<ServerElevationRequest> requests =
-                serverElevationRequestRepository.findByRequestIdIn(requestIds);
+        Map<String, ServerElevationRequest> serverElevationRequestMap;
 
-//  Map requestId → ServerElevationRequest
-        Map<String, ServerElevationRequest> requestMap =
-                requests.stream()
-                        .collect(Collectors.toMap(
-                                ServerElevationRequest::getRequestId,
-                                r -> r
-                        ));
+        if (!serverElevationRequestIds.isEmpty()) {
+            serverElevationRequestMap =
+                    serverElevationRequestRepository.findByRequestIdIn(serverElevationRequestIds)
+                            .stream()
+                            .collect(Collectors.toMap(
+                                    ServerElevationRequest::getRequestId,
+                                    r -> r
+                            ));
+        } else {
+            serverElevationRequestMap = Map.of();
+        }
+
 
 //  Map Approval → DTO
         Page<ApprovalWithRequestDTO> responsePage =
-                pageData.map(approval -> ApprovalWithRequestDTO.builder()
-                        .approvalId(approval.getApprovalId())
-                        .approvalRequestDate(approval.getApprovalRequestDate())
-                        .requestId(approval.getRequestId())
-                        .approver(approval.getApprover())
-                        .workItemName(approval.getWorkItemName())
-                        .workItemType(approval.getWorkItemType())
-                        .approvalStatus(approval.getApprovalStatus())
-                        .approverComment(approval.getApproverComment())
-                        .approvalLevel(approval.getApprovalLevel())
-                        .approvalDate(approval.getApprovalDate())
-                        .requestee(approval.getRequestee())
-                        .requestDetails(
-                                requestMap.get(approval.getRequestId())
-                        )
-                        .build()
-                );
+                pageData.map(approval -> {
+
+                    Object requestDetails = null;
+
+                    if ("SERVER-ELEVATION".equalsIgnoreCase(approval.getWorkItemType())) {
+                        requestDetails =
+                                serverElevationRequestMap.get(approval.getRequestId());
+                    }
+                    // else if ("DATABASE-ACCESS".equalsIgnoreCase(approval.getWorkItemType())) {
+                    //     requestDetails = dbAccessRequestMap.get(approval.getRequestId());
+                    // }
+
+                    return ApprovalWithRequestDTO.builder()
+                            .approvalId(approval.getApprovalId())
+                            .approvalRequestDate(approval.getApprovalRequestDate())
+                            .requestId(approval.getRequestId())
+                            .approver(approval.getApprover())
+                            .workItemName(approval.getWorkItemName())
+                            .workItemType(approval.getWorkItemType())
+                            .approvalStatus(approval.getApprovalStatus())
+                            .approverComment(approval.getApproverComment())
+                            .approvalLevel(approval.getApprovalLevel())
+                            .approvalDate(approval.getApprovalDate())
+                            .requestee(approval.getRequestee())
+                            .requestDetails(requestDetails)
+                            .build();
+                });
+
         log.info("END getApprovalDetails | user={} | resultReturned", loggedInUser);
         return ResponseEntity.ok(responsePage);
 
