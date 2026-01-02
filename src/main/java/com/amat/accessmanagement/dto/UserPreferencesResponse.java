@@ -1,8 +1,10 @@
 package com.amat.accessmanagement.dto;
 
+import jakarta.persistence.Column;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
@@ -10,6 +12,10 @@ import java.util.List;
 public class UserPreferencesResponse {
     private String employeeId;
     private List<String> favTiles;
+    private boolean oooEnabled;
+    private LocalDateTime oooStartDate;
+    private LocalDateTime oooEndDate;
+    private String oooApprover;
     private String message;
 }
 

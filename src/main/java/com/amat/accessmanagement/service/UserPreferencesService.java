@@ -271,6 +271,10 @@ public class UserPreferencesService {
             return new UserPreferencesResponse(
                     employeeId,
                     List.of(),
+                    false,
+                    null,
+                    null,
+                    "",
                     "User not found"
             );
         }
@@ -284,6 +288,10 @@ public class UserPreferencesService {
             return new UserPreferencesResponse(
                     employeeId,
                     List.of(),
+                    false,
+                    null,
+                    null,
+                    "",
                     "User preferences not found"
             );
         }
@@ -304,6 +312,10 @@ public class UserPreferencesService {
         return new UserPreferencesResponse(
                 employeeId,
                 tiles,
+                prefs.getOooEnabled(),
+                prefs.getOooStartDate(),
+                prefs.getOooEndDate(),
+                prefs.getOooApprover(),
                 "User preferences retrieved successfully"
         );
     }
