@@ -109,17 +109,34 @@ public class CommonsController {
     ) {
         String employeeId = request.getHeader("employeeId");
 
-        log.info(
-                "Received create/update preferences request for employeeId={}, AddFavTiles={},  RemoveFavTiles={}",
-                employeeId,
-                req.getAddFavTiles(), req.getRemoveFavTiles()
-        );
 
-        userPreferencesService.createOrUpdatePreferences(
-                employeeId,
-                req.getAddFavTiles(),
-                req.getRemoveFavTiles()
-        );
+        if(req.getOperation().equalsIgnoreCase("favtiles")){
+
+            log.info(
+                    "Received create/update preferences request for employeeId={}, AddFavTiles={},  RemoveFavTiles={}",
+                    employeeId,
+                    req.getAddFavTiles(), req.getRemoveFavTiles()
+            );
+
+            userPreferencesService.createOrUpdatePreferences(
+                    employeeId,
+                    req.getAddFavTiles(),
+                    req.getRemoveFavTiles()
+            );
+        }else if (req.getOperation().equalsIgnoreCase("ooo")){
+            log.info(
+                    "Received OOO update request | employeeId={} | enabled={} | start={} | end={} | approver={}",
+                    employeeId,
+                    req.isOooEnabled(),
+                    req.getOooStartDate(),
+                    req.getOooEndDate(),
+                    req.getOooApprover()
+            );
+
+            userPreferencesService.updateOOODetails(employeeId,req);
+        }
+
+
 
         return ResponseEntity.ok(Map.of(
                 "message", "Preferences updated successfully"

@@ -266,6 +266,24 @@ public class ServerElevationService {
         boolean isMemberOfAdminGroup = allRecursiveMembers.contains(userAdminDn);
         response.setApprovalRequired(!isMemberOfAdminGroup);
 
+        if (response.getApprovalRequired()) {
+            OwnerDetails ownerDetails = response.getOwnerDetails();
+
+            if (ownerDetails == null ||
+                    ownerDetails.getOwnerEmpID() == null ||
+                    ownerDetails.getOwnerEmpID().isBlank()) {
+
+                log.warn(
+                        "OWNER_EMP_ID_MISSING | server={} | approvalRequired=true",
+                        request.getServerName()
+                );
+
+                response.setEligibleForElevation(false);
+                setError(response, "OWNER_EMP_ID_MISSING");
+                return response;
+            }
+        }
+
         log.info("END validateRequest | server={} | eligible={} | approvalRequired={}",
                 request.getServerName(),
                 response.getEligibleForElevation(),
@@ -508,7 +526,7 @@ public class ServerElevationService {
                         .elevationStatusMessage(req.getElevationStatusMessage())
                         .deElevationStatusMessage(req.getDeElevationStatusMessage())
                         .status(req.getStatus())
-//                        .approvalId(req.getApprovalId())
+                        .approvalId(req.getApprovalId())
                         .approvalDetails(
                                 approvalMap.getOrDefault(req.getRequestId(), List.of())
                         )

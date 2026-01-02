@@ -2,6 +2,7 @@ package com.amat.accessmanagement.service;
 
 
 
+import com.amat.accessmanagement.dto.UserPreferencesRequest;
 import com.amat.accessmanagement.dto.UserPreferencesResponse;
 import com.amat.commonutils.entity.UserPreferences;
 import com.amat.accessmanagement.repository.UserEnrollmentRepository;
@@ -149,6 +150,107 @@ public class UserPreferencesService {
             );
         } finally {
             log.info("END :: Updating user preferences | employeeId={}", employeeId);
+        }
+    }
+
+    @Transactional
+    public void updateOOODetails(String employeeId, UserPreferencesRequest req) {
+
+        log.info("START :: Updating OOO details | employeeId={}", employeeId);
+
+        if (employeeId == null || employeeId.isBlank()) {
+            log.warn("Invalid employeeId provided");
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "EmployeeId must not be empty"
+            );
+        }
+
+        try {
+            //  Validate user exists
+            if (!userEnrollmentRepository.findByEmployeeId(employeeId).isPresent()) {
+                log.warn("User not found in enrollment | employeeId={}", employeeId);
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "Invalid employeeId"
+                );
+            }
+
+            //  Fetch or create preferences
+            UserPreferences prefs = repo.findById(employeeId)
+                    .orElseGet(() -> {
+                        log.info("Creating new user_preferences record | employeeId={}", employeeId);
+                        return UserPreferences.builder()
+                                .employeeId(employeeId)
+                                .build();
+                    });
+
+            //  Validate OOO fields
+            if (req.isOooEnabled()) {
+
+                if (req.getOooStartDate() == null || req.getOooEndDate() == null) {
+                    log.warn("OOO enabled but dates missing | employeeId={}", employeeId);
+                    throw new ResponseStatusException(
+                            HttpStatus.BAD_REQUEST,
+                            "OOO start date and end date are required"
+                    );
+                }
+
+                if (req.getOooEndDate().isBefore(req.getOooStartDate())) {
+                    log.warn("Invalid OOO date range | employeeId={}", employeeId);
+                    throw new ResponseStatusException(
+                            HttpStatus.BAD_REQUEST,
+                            "OOO end date must be after start date"
+                    );
+                }
+
+                if (req.getOooApprover() == null || req.getOooApprover().isBlank()) {
+                    log.warn("OOO approver missing | employeeId={}", employeeId);
+                    throw new ResponseStatusException(
+                            HttpStatus.BAD_REQUEST,
+                            "OOO approver is required"
+                    );
+                }
+            }
+
+            //  Update OOO fields
+            prefs.setOooEnabled(req.isOooEnabled());
+            prefs.setOooStartDate(req.getOooStartDate());
+            prefs.setOooEndDate(req.getOooEndDate());
+            prefs.setOooApprover(req.getOooApprover());
+            prefs.setUpdatedAt(LocalDateTime.now());
+
+            repo.save(prefs);
+
+            log.info(
+                    "SUCCESS :: OOO details updated | employeeId={} | enabled={} | start={} | end={} | approver={}",
+                    employeeId,
+                    req.isOooEnabled(),
+                    req.getOooStartDate(),
+                    req.getOooEndDate(),
+                    req.getOooApprover()
+            );
+
+        } catch (ResponseStatusException ex) {
+            log.error(
+                    "BUSINESS ERROR :: OOO update failed | employeeId={} | reason={}",
+                    employeeId,
+                    ex.getReason()
+            );
+            throw ex;
+
+        } catch (Exception ex) {
+            log.error(
+                    "SYSTEM ERROR :: Unexpected error updating OOO | employeeId={}",
+                    employeeId,
+                    ex
+            );
+            throw new ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Failed to update OOO details"
+            );
+        } finally {
+            log.info("END :: Updating OOO details | employeeId={}", employeeId);
         }
     }
 
