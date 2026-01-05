@@ -1,12 +1,12 @@
-package com.amat.accessmanagement.service;
+package com.amat.commonutils.service;
 
 
 
-import com.amat.accessmanagement.dto.UserPreferencesRequest;
-import com.amat.accessmanagement.dto.UserPreferencesResponse;
+import com.amat.commonutils.dto.UserPreferencesRequest;
+import com.amat.commonutils.dto.UserPreferencesResponse;
 import com.amat.commonutils.entity.UserPreferences;
 import com.amat.accessmanagement.repository.UserEnrollmentRepository;
-import com.amat.accessmanagement.repository.UserPreferencesRepository;
+import com.amat.commonutils.repository.UserPreferencesRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -312,7 +312,7 @@ public class UserPreferencesService {
         return new UserPreferencesResponse(
                 employeeId,
                 tiles,
-                prefs.getOooEnabled(),
+                prefs.isOooEnabled(),
                 prefs.getOooStartDate(),
                 prefs.getOooEndDate(),
                 prefs.getOooApprover(),

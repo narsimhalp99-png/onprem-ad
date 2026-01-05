@@ -1,6 +1,5 @@
-package com.amat.accessmanagement.dto;
+package com.amat.commonutils.dto;
 
-import jakarta.persistence.Column;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 

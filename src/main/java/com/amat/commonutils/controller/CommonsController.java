@@ -1,18 +1,16 @@
 package com.amat.commonutils.controller;
 
-import com.amat.accessmanagement.dto.UserPreferencesRequest;
-import com.amat.accessmanagement.dto.UserPreferencesResponse;
+import com.amat.commonutils.dto.UserPreferencesRequest;
 import com.amat.accessmanagement.dto.UserSearchResponseDTO;
 import com.amat.accessmanagement.entity.UserEntity;
 import com.amat.accessmanagement.service.SearchUsersService;
 import com.amat.accessmanagement.service.UserEnrollmentService;
-import com.amat.accessmanagement.service.UserPreferencesService;
+import com.amat.commonutils.service.UserPreferencesService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;

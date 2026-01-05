@@ -2,7 +2,7 @@ package com.amat.serverelevation.service;
 
 import com.amat.accessmanagement.entity.UserEntity;
 import com.amat.accessmanagement.repository.UserEnrollmentRepository;
-import com.amat.accessmanagement.repository.UserPreferencesRepository;
+import com.amat.commonutils.repository.UserPreferencesRepository;
 import com.amat.accessmanagement.service.RoleService;
 import com.amat.admanagement.dto.*;
 import com.amat.admanagement.service.ComputerService;

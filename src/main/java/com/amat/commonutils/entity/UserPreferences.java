@@ -34,7 +34,7 @@ public class UserPreferences {
     private LocalDateTime updatedAt;
 
     @Column(name = "ooo_enabled")
-    private Boolean oooEnabled;
+    private boolean oooEnabled;
 
     @Column(name = "ooo_start_date")
     private LocalDateTime oooStartDate;

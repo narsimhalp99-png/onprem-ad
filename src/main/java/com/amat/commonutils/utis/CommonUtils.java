@@ -14,7 +14,7 @@ public class CommonUtils {
     public boolean isUserOutOfOffice(UserPreferences prefs) {
         if (prefs == null) return false;
 
-        if (!Boolean.TRUE.equals(prefs.getOooEnabled())) {
+        if (!Boolean.TRUE.equals(prefs.isOooEnabled())) {
             return false;
         }
 

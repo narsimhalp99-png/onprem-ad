@@ -1,8 +1,7 @@
 package com.amat.approvalmanagement.service;
 
-import com.amat.accessmanagement.repository.UserPreferencesRepository;
+import com.amat.commonutils.repository.UserPreferencesRepository;
 import com.amat.accessmanagement.service.RoleService;
-import com.amat.admanagement.service.GroupsService;
 import com.amat.approvalmanagement.dto.ApprovalActionRequest;
 import com.amat.approvalmanagement.dto.ApprovalDetailsFilterDTO;
 import com.amat.approvalmanagement.dto.ApprovalWithRequestDTO;
@@ -17,7 +16,6 @@ import com.amat.serverelevation.entity.ServerElevationRequest;
 import com.amat.serverelevation.repository.ServerElevationRepository;
 import com.amat.serverelevation.repository.ServerElevationRequestRepository;
 import com.amat.serverelevation.service.ServerElevationService;
-import com.amat.serverelevation.util.ServerElevationUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
