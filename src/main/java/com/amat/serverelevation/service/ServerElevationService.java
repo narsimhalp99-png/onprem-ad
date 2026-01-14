@@ -1,7 +1,10 @@
 package com.amat.serverelevation.service;
 
+import com.amat.accessmanagement.dto.User;
 import com.amat.accessmanagement.entity.UserEntity;
 import com.amat.accessmanagement.repository.UserEnrollmentRepository;
+import com.amat.approvalmanagement.dto.ReassignApprovalRequest;
+import com.amat.approvalmanagement.service.ApprovalsService;
 import com.amat.commonutils.repository.UserPreferencesRepository;
 import com.amat.accessmanagement.service.RoleService;
 import com.amat.admanagement.dto.*;
@@ -10,6 +13,7 @@ import com.amat.admanagement.service.GroupsService;
 import com.amat.admanagement.service.UserService;
 import com.amat.approvalmanagement.enums.ApprovalStatus;
 import com.amat.commonutils.entity.UserPreferences;
+import com.amat.commonutils.service.EmailService;
 import com.amat.commonutils.utis.CommonUtils;
 import com.amat.serverelevation.DTO.getServerElevationRequests;
 import com.amat.serverelevation.DTO.*;
@@ -75,6 +79,12 @@ public class ServerElevationService {
 
     @Value("${spring.ldap.base:''}")
     String defaultBase;
+
+    @Autowired
+    EmailService emailService;
+
+    @Autowired
+    ApprovalsService approvalsService;
 
     public ServerElevationResponse validateRequest(ServerElevationRequestDTO request) {
 
@@ -236,13 +246,13 @@ public class ServerElevationService {
         response.setEligibleForElevation(true);
 
         // Step 6: Need Approval?
-            GroupsRequest recursiveGroupReq = GroupsRequest.builder()
-                    .searchBaseOU(defaultBase)
-                    .filter("(cn=" + adminGroup + ")")
-                    .pageSize(2)
-                    .pageNumber(0)
-                    .fetchRecursiveMembers(false)
-                    .build();
+        GroupsRequest recursiveGroupReq = GroupsRequest.builder()
+                .searchBaseOU(defaultBase)
+                .filter("(cn=" + adminGroup + ")")
+                .pageSize(2)
+                .pageNumber(0)
+                .fetchRecursiveMembers(false)
+                .build();
 
         log.debug("Checking approval requirement | adminGroup={}", adminGroup);
 
@@ -307,6 +317,8 @@ public class ServerElevationService {
 
         List<SubmitResponse> results = new ArrayList<>();
 
+        Optional<UserEntity> userEntityOptional = userEnrollmentRepository.findByEmployeeId(employeeId);
+
         String userDn = utils.fetchUserDn(employeeId);
         String userAdminDn = utils.fetchAdminAccountDn(userDn);
 
@@ -322,6 +334,20 @@ public class ServerElevationService {
 
             // Validate eligibility (additionalDetails = true to get approvalRequired)
             ServerElevationResponse validation = validateRequest(validateReq);
+
+            Optional<ServerElevationRequest> existingReq =
+                    serverRepo.findByRequestedByAndServerNameAndStatus(
+                            employeeId,
+                            entry.getServerName(),
+                            ApprovalStatus.Pending_Approval.name()
+                    );
+
+            if(existingReq.isPresent()){
+                log.info("Request already present with same details");
+                results.add(new SubmitResponse(server, "Failed :: Request already present with same details", null, null,
+                        validation.getEligibleForElevationMsg()));
+                continue;
+            }
 
             if (!Boolean.TRUE.equals(validation.getEligibleForElevation())) {
                 log.warn("Server not eligible | server={} | reason={}",
@@ -353,24 +379,24 @@ public class ServerElevationService {
                 String elevationErr = null;
 
                 try {
-                            // 2. Build the group DN for server-local-admins
-                            String groupDn = utils.fetchGroupDn(server+ "-LOCAL-ADMINS");
+                    // 2. Build the group DN for server-local-admins
+                    String groupDn = utils.fetchGroupDn(server+ "-LOCAL-ADMINS");
 
-                            // 3. Construct ManageGroupRequest
-                            ManageGroupRequest manageReq = new ManageGroupRequest();
-                            manageReq.setGroupDn(groupDn);
-                            manageReq.setUserDns(List.of(userAdminDn));
-                            manageReq.setOperation("ADD");   // ADD / REMOVE
+                    // 3. Construct ManageGroupRequest
+                    ManageGroupRequest manageReq = new ManageGroupRequest();
+                    manageReq.setGroupDn(groupDn);
+                    manageReq.setUserDns(List.of(userAdminDn));
+                    manageReq.setOperation("ADD");   // ADD / REMOVE
 
-                            // 4. Call groupService
-                            ModifyGroupResponse modifyResp = groupsService.modifyGroupMembers(manageReq);
+                    // 4. Call groupService
+                    ModifyGroupResponse modifyResp = groupsService.modifyGroupMembers(manageReq);
 
-                            if ("200".equals(modifyResp.getStatusCode()) || "success".equalsIgnoreCase(modifyResp.getStatusCode())) {
-                                elevationSuccess = true;
-                            } else {
-                                elevationSuccess = false;
-                                elevationErr = String.join(", ", modifyResp.getErrors());
-                            }
+                    if ("200".equals(modifyResp.getStatusCode()) || "success".equalsIgnoreCase(modifyResp.getStatusCode())) {
+                        elevationSuccess = true;
+                    } else {
+                        elevationSuccess = false;
+                        elevationErr = String.join(", ", modifyResp.getErrors());
+                    }
 
                 } catch (Exception ex) {
                     log.error("Elevation failed for server {}: {}", server, ex.getMessage(), ex);
@@ -397,6 +423,8 @@ public class ServerElevationService {
                 String approverEmpId = validation.getOwnerDetails().getOwnerEmpID();
                 String finalApprover = approverEmpId;
 
+                boolean isOwnerOOO = false;
+
                 // Fetch preferences of owner
                 Optional<UserPreferences> ownerPrefsOpt =
                         userPreferencesRepository.findById(approverEmpId);
@@ -413,7 +441,7 @@ public class ServerElevationService {
                                     prefs.getOooEndDate(),
                                     prefs.getOooApprover()
                             );
-
+                            isOwnerOOO = true;
                             finalApprover = prefs.getOooApprover();
                         } else {
                             log.warn(
@@ -428,13 +456,12 @@ public class ServerElevationService {
                 // Approval required: create approval_details row (DB will generate ApprovalID)
                 ApprovalDetails approval = ApprovalDetails.builder()
                         .requestId(requestId)
-                        .approver(finalApprover)
+                        .approver(approverEmpId)
                         .workItemName(server + " (Duration: " + entry.getDurationInHours() + " Hours)")
                         .workItemType("SERVER-ELEVATION")
                         .approvalStatus(ApprovalStatus.Pending_Approval.name())
                         .approvalLevel(1)
                         .requestee(employeeId)
-                        .requestor(employeeId)
                         .build();
 
 
@@ -447,6 +474,28 @@ public class ServerElevationService {
                 }
 
                 serverRepo.updateStatusAndApprover(requestId, ApprovalStatus.Pending_Approval.name(), approvalId.toUpperCase());
+
+                if(isOwnerOOO) {
+
+                    ReassignApprovalRequest reassignApprovalRequest= new ReassignApprovalRequest();
+                    reassignApprovalRequest.setApprovalId(approval.getApprovalId());
+                    reassignApprovalRequest.setNewApprover(finalApprover);
+                    reassignApprovalRequest.setComment("System default reassignment, Since the actualOwner is OOO");
+                    reassignApprovalRequest.setAction("reassign");
+                    approvalsService.reassignApproval(reassignApprovalRequest,"System");
+
+                    Optional<UserEntity> ownerUserOptional = userEnrollmentRepository.findById(approverEmpId);
+//                    Optional<UserEntity> oooUserOptional = userEnrollmentRepository.findById(finalApprover);
+                    if(ownerUserOptional.isPresent()){
+                        emailService.sendEmail("#system  has reassigned below approval item to " + finalApprover +  "for server" + entry.getServerName(),"OOOReassignEmail",approvalsService.getApprovalById(UUID.fromString(approvalId)),null,ownerUserOptional.get());
+                     }
+                 }else{
+                    Optional<UserEntity> requestorOptional = userEnrollmentRepository.findById(employeeId);
+                    UserEntity requestor = requestorOptional.get();
+                    emailService.sendEmail("#APPROVAL REQUIRED# Server Elevation request submitted by user  " +requestor.getDisplayName() +"("+employeeId +")"+  "for server" + entry.getServerName(),"ApprovalEmail",approvalsService.getApprovalById(UUID.fromString(approvalId)),null,null);
+                }
+
+
                 results.add(new SubmitResponse(server, ApprovalStatus.Pending_Approval.name(), requestId, approvalId.toUpperCase(), finalApprover.equals(approverEmpId)
                         ? "Waiting for Owner Approval"
                         : "Waiting for Alternate Approver Approval"));
@@ -590,41 +639,44 @@ public class ServerElevationService {
             }
 
 
-                log.info("Adding to LOCAL-ADMINS | server={}", server);
+            log.info("Adding to LOCAL-ADMINS | server={}", server);
 
-                String localAdminsGroupDn = utils.fetchGroupDn(server + "-LOCAL-ADMINS");
-                log.info("Adding to LOCAL-ADMINS | localAdminsGroupDn={}", appAdminsGroupDn);
-                ManageGroupRequest localAdminReq = new ManageGroupRequest();
-                localAdminReq.setGroupDn(localAdminsGroupDn);
-                localAdminReq.setUserDns(List.of(userAdminDn));
-                localAdminReq.setOperation("ADD");
+            String localAdminsGroupDn = utils.fetchGroupDn(server + "-LOCAL-ADMINS");
+            log.info("Adding to LOCAL-ADMINS | localAdminsGroupDn={}", appAdminsGroupDn);
+            ManageGroupRequest localAdminReq = new ManageGroupRequest();
+            localAdminReq.setGroupDn(localAdminsGroupDn);
+            localAdminReq.setUserDns(List.of(userAdminDn));
+            localAdminReq.setOperation("ADD");
 
-                ModifyGroupResponse localResp = groupsService.modifyGroupMembers(localAdminReq);
-                log.info("Adding to APP-ADMINS | addToLocalAdminsResp={}", localResp);
-                if ("200".equals(localResp.getStatusCode())
-                        || "success".equalsIgnoreCase(localResp.getStatusCode())) {
-                    localAdminSuccess = true;
-                    log.info("Updating server elevation table::Start");
-                    serverElevationRequestRepository.findByRequestId(requestId).ifPresent(serReq -> {
-                        serReq.setElevationStatus("Success");
-                        serReq.setElevationTime(LocalDateTime.now());
-                        serReq.setElevationStatusMessage("Elevated Successfully");
-                        serReq.setStatus(ApprovalStatus.In_Progress.name());
-                    });
-                    log.info("Updating server elevation table::Done");
+            ModifyGroupResponse localResp = groupsService.modifyGroupMembers(localAdminReq);
+            log.info("Adding to APP-ADMINS | addToLocalAdminsResp={}", localResp);
+            if ("200".equals(localResp.getStatusCode())
+                    || "success".equalsIgnoreCase(localResp.getStatusCode())) {
+                localAdminSuccess = true;
+                log.info("Updating server elevation table::Start");
+                serverElevationRequestRepository.findByRequestId(requestId).ifPresent(serReq -> {
+                    serReq.setElevationStatus("Success");
+                    serReq.setElevationTime(LocalDateTime.now());
+                    serReq.setElevationStatusMessage("Elevated Successfully");
+                    serReq.setStatus(ApprovalStatus.In_Progress.name());
+                });
+                log.info("Updating server elevation table::Done");
 
-                } else {
-                    errorMsg = String.join(", ", localResp.getErrors());
-                    log.error("Add operation for user ::{} | with localAdminsGroupDn {} | to APP-ADMINS Failed with errors ::{}",userDn, localAdminsGroupDn,errorMsg);
 
-                    serverRepo.updateOnFailure(
-                            requestId,
-                            "Failed",
-                             errorMsg != null ? errorMsg : "Group assignment failed",
-                            "Completed"
-                    );
 
-                }
+
+            } else {
+                errorMsg = String.join(", ", localResp.getErrors());
+                log.error("Add operation for user ::{} | with localAdminsGroupDn {} | to APP-ADMINS Failed with errors ::{}",userDn, localAdminsGroupDn,errorMsg);
+
+                serverRepo.updateOnFailure(
+                        requestId,
+                        "Failed",
+                        errorMsg != null ? errorMsg : "Group assignment failed",
+                        "Completed"
+                );
+
+            }
 
         } catch (Exception ex) {
             log.error("Post-approval elevation failed | requestId={} | error={}",
@@ -735,3 +787,5 @@ public class ServerElevationService {
 
 
 }
+
+

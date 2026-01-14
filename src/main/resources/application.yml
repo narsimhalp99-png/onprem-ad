@@ -13,7 +13,18 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.SQLServerDialect
-
+  mail:
+    host: smtp.xyz.com
+    port: 25
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
+          connectiontimeout: 50000
+          timeout: 50000
+          writetimeout: 50000
 
   ldap:
     search-subtree: true
@@ -26,6 +37,7 @@ spring:
       java.naming.ldap.attributes.binary: objectGUID
   main:
     allow-bean-definition-overriding: true
+    allow-circular-references: true
 
 server:
   error:

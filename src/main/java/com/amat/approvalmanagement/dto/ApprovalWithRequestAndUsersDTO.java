@@ -1,5 +1,6 @@
 package com.amat.approvalmanagement.dto;
 
+import com.amat.accessmanagement.entity.UserEntity;
 import com.amat.serverelevation.entity.ServerElevationRequest;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,7 +14,7 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ApprovalWithRequestDTO {
+public class ApprovalWithRequestAndUsersDTO {
 
     private UUID approvalId;
     private LocalDateTime approvalRequestDate;
@@ -28,6 +29,9 @@ public class ApprovalWithRequestDTO {
     private String requestee;
     private String approverName;
     private String requestorEmpId;
-    private Object requestDetails;
+    private ServerElevationRequest requestDetails;
+    private UserEntity requestorDetails;
+    private UserEntity approverDetails;
+
 }
 

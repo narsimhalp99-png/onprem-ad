@@ -52,4 +52,12 @@ public interface ServerElevationRepository extends JpaRepository<ServerElevation
 
 
     Optional<ServerElevationRequest> findByRequestId(String requestId);
+
+
+    Optional<ServerElevationRequest> findByRequestedByAndServerNameAndStatus(
+            String requestedBy,
+            String serverName,
+            String status
+    );
+
 }

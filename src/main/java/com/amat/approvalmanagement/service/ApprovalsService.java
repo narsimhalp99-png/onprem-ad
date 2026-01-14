@@ -1,16 +1,16 @@
 package com.amat.approvalmanagement.service;
 
+import com.amat.accessmanagement.entity.UserEntity;
+import com.amat.accessmanagement.repository.UserEnrollmentRepository;
+import com.amat.approvalmanagement.dto.*;
 import com.amat.commonutils.repository.UserPreferencesRepository;
 import com.amat.accessmanagement.service.RoleService;
-import com.amat.approvalmanagement.dto.ApprovalActionRequest;
-import com.amat.approvalmanagement.dto.ApprovalDetailsFilterDTO;
-import com.amat.approvalmanagement.dto.ApprovalWithRequestDTO;
-import com.amat.approvalmanagement.dto.ReassignApprovalRequest;
 import com.amat.approvalmanagement.enums.ApprovalStatus;
 import com.amat.approvalmanagement.repository.ApprovalDetailsFilterRepository;
 import com.amat.approvalmanagement.entity.ApprovalDetails;
 import com.amat.approvalmanagement.repository.ApprovalDetailsRepository;
 import com.amat.commonutils.entity.UserPreferences;
+import com.amat.commonutils.service.EmailService;
 import com.amat.commonutils.utis.CommonUtils;
 import com.amat.serverelevation.entity.ServerElevationRequest;
 import com.amat.serverelevation.repository.ServerElevationRepository;
@@ -27,9 +27,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import org.springframework.web.server.ResponseStatusException;
@@ -61,6 +59,12 @@ public class ApprovalsService {
 
     @Autowired
     ServerElevationService serverElevationService;
+
+    @Autowired
+    UserEnrollmentRepository userEnrollmentRepository;
+
+    @Autowired
+    EmailService emailService;
 
     public Object getApprovalDetails(ApprovalDetailsFilterDTO filter, int page, int size, String loggedInUser, boolean isSelf) {
 
@@ -168,6 +172,7 @@ public class ApprovalsService {
                             .approvalLevel(approval.getApprovalLevel())
                             .approvalDate(approval.getApprovalDate())
                             .requestee(approval.getRequestee())
+//                            .approverName(approval.getA)
                             .requestDetails(requestDetails)
                             .build();
                 });
@@ -252,9 +257,10 @@ public class ApprovalsService {
                 requestId,
                 requestee
         );
+        String server = approval.getWorkItemName().split(" \\(")[0];
 
         // Handle parallel approvals
-        makeParallelApprovals(requestId, level, requestee, req.getAction());
+        makeParallelApprovals(requestId, String.valueOf(req.getApprovalId()),requestee, server, level, requestee, req.getAction(),approval.getWorkItemType());
 
         if (req.isApprove()) {
 
@@ -268,7 +274,9 @@ public class ApprovalsService {
                     requestee,
                     requestId,
                     level,
-                    approval.getWorkItemType()
+                    approval.getWorkItemType(),
+                    server,
+                    String.valueOf(req.getApprovalId())
             );
 
         } else {
@@ -281,7 +289,7 @@ public class ApprovalsService {
 
 
 
-            cancelFutureApprovals(requestId, level);
+            cancelFutureApprovals(requestId, String.valueOf(req.getApprovalId()), requestee,server, level,approval.getWorkItemType());
 
 
         if("SERVER-ELEVATION".equalsIgnoreCase(approval.getWorkItemType())){
@@ -306,9 +314,13 @@ public class ApprovalsService {
 
     private void makeParallelApprovals(
             String requestId,
+            String approvalId,
+            String requestee,
+            String server,
             int level,
             String user,
-            String action) {
+            String action,
+            String workItemType) {
 
         log.debug(
                 "START makeParallelApprovals | requestId={} | level={} | action={}",
@@ -343,6 +355,7 @@ public class ApprovalsService {
                 requestId,
                 approvals.size()
         );
+
     }
 
 
@@ -350,7 +363,7 @@ public class ApprovalsService {
             String requestee,
             String requestId,
             int level,
-            String workItemType) {
+            String workItemType, String server, String approvalId) {
 
         log.debug(
                 "START handleNextLevelOrPostAction | requestId={} | level={} | workItemType={}",
@@ -388,7 +401,7 @@ public class ApprovalsService {
                     "No further approval levels, performing post-approval action | requestId={}",
                     requestId
             );
-            performPostApprovalAction(requestee, requestId, workItemType);
+            performPostApprovalAction(requestee, requestId, workItemType, server, approvalId);
         }
 
         log.debug(
@@ -398,7 +411,7 @@ public class ApprovalsService {
     }
 
 
-    private void cancelFutureApprovals(String requestId, int level) {
+    private void cancelFutureApprovals(String requestId,String approvalId,String requestee ,String server,int level, String workItemType) {
 
         log.debug(
                 "START cancelFutureApprovals | requestId={} | fromLevel={}",
@@ -429,9 +442,15 @@ public class ApprovalsService {
                 requestId,
                 future.size()
         );
+
+
+        if(workItemType.equalsIgnoreCase("SERVER-ELEVATION")){
+            emailService.sendEmail("#REJECTED# Server Elevation request for server " + server, "ApprovalRejectedEmail", getApprovalById(UUID.fromString(approvalId)), null, null);
+        }
+
     }
 
-    private void performPostApprovalAction(String loggedInUser, String requestId, String workItemType) {
+    private void performPostApprovalAction(String loggedInUser, String requestId, String workItemType, String server, String approvalId) {
 
         log.info(
                 "START performPostApprovalAction | requestId={} | workItemType={} | user={}",
@@ -442,6 +461,8 @@ public class ApprovalsService {
 
         if ("SERVER-ELEVATION".equalsIgnoreCase(workItemType)) {
             serverElevationService.performPostApprovalDenyActionServerElevation(loggedInUser, requestId);
+            emailService.sendEmail("#APPROVED# Server Elevation request for server" + server, "ApprovedEmail", getApprovalById(UUID.fromString(approvalId)), null, null);
+
             log.info(
                     "Post approval action executed for SERVER-ELEVATION | requestId={}",
                     requestId
@@ -515,6 +536,7 @@ public class ApprovalsService {
 
         approvalRepo.save(existing);
 
+
         log.info(
                 "Existing approval marked as ReAssigned | approvalId={} | oldApprover={} | newApprover={}",
                 existing.getApprovalId(),
@@ -563,11 +585,16 @@ public class ApprovalsService {
                 .approvalLevel(existing.getApprovalLevel())
                 .approvalStatus(ApprovalStatus.Pending_Approval.name())
                 .requestee(existing.getRequestee())
-                .requestor(existing.getRequestor())
+//                .requestor(existing.getRequestor())
                 .approvalRequestDate(LocalDateTime.now())
                 .build();
 
         approvalRepo.save(newApproval);
+
+        Optional<UserEntity> oldApprovals = userEnrollmentRepository.findById(oldApprover);
+
+        oldApprovals.ifPresent(oldApproverEntity -> emailService.sendEmail("#APPROVAL REQUIRED# Server Elevation request submitted by user" + existing.getRequestee() + "for server" + newApproval.getWorkItemName().split(" \\(")[0], "ApprovalReassignedEmail", getApprovalById(newApproval.getApprovalId()), null, oldApproverEntity));
+
 
         log.info(
                 "New approval created | newApprovalId={} | requestId={} | approver={} | status={}",
@@ -635,5 +662,80 @@ public class ApprovalsService {
         log.info("Approval reassignment completed successfully. requestId={}", newApproval.getRequestId());
 
     }
+
+
+    public ApprovalWithRequestAndUsersDTO getApprovalById(UUID approvalId) {
+
+        log.info("START getApprovalById | approvalId={}", approvalId);
+
+        // 1. Fetch approval
+        ApprovalDetails approval = approvalRepo.findById(approvalId)
+                .orElseThrow(() -> {
+                    log.warn("Approval not found | approvalId={}", approvalId);
+                    return new ResponseStatusException(
+                            HttpStatus.NOT_FOUND,
+                            "Approval not found"
+                    );
+                });
+
+        // 2. Enrich request details
+        ServerElevationRequest requestDetails = null;
+        if ("SERVER-ELEVATION".equalsIgnoreCase(approval.getWorkItemType())) {
+            requestDetails = serverElevationRequestRepository
+                    .findByRequestId(approval.getRequestId())
+                    .orElse(null);
+        }
+
+        // 3. Fetch requestor (requestee) details
+        UserEntity requestorDetails = null;
+        if (approval.getRequestee() != null) {
+            requestorDetails = userEnrollmentRepository
+                    .findByEmployeeId(approval.getRequestee())
+                    .orElse(null);
+
+            log.debug(
+                    "Requestor details resolved | requestee={}",
+                    approval.getRequestee()
+            );
+        }
+
+        // 4. Fetch approver details
+        UserEntity approverDetails = null;
+        if (approval.getApprover() != null) {
+            approverDetails = userEnrollmentRepository
+                    .findByEmployeeId(approval.getApprover())
+                    .orElse(null);
+
+            log.debug(
+                    "Approver details resolved | approver={}",
+                    approval.getApprover()
+            );
+        }
+
+        // 5. Build response
+        ApprovalWithRequestAndUsersDTO response =
+                ApprovalWithRequestAndUsersDTO.builder()
+                        .approvalId(approval.getApprovalId())
+                        .approvalRequestDate(approval.getApprovalRequestDate())
+                        .requestId(approval.getRequestId())
+                        .approver(approval.getApprover())
+                        .requestee(approval.getRequestee())
+                        .workItemName(approval.getWorkItemName())
+                        .workItemType(approval.getWorkItemType())
+                        .approvalStatus(approval.getApprovalStatus())
+                        .approverComment(approval.getApproverComment())
+                        .approvalLevel(approval.getApprovalLevel())
+                        .approvalDate(approval.getApprovalDate())
+                        .requestDetails(requestDetails)
+                        .requestorDetails(requestorDetails)
+                        .approverDetails(approverDetails)
+                        .build();
+
+        log.info("END getApprovalById | approvalId={}", approvalId);
+
+        return response;
+    }
+
+
 
 }

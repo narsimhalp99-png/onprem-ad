@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.w3.org/1999/xhtml" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Server Elevation Request Rejected</title>
+</head>
+<body style="font-family: Arial, sans-serif; font-size: 14px; color: #333;">
+
+<p>
+    Dear <strong th:text="${content.requestorDetails.firstName}">Requestor</strong>,
+</p>
+
+<p>
+    Your server elevation request for server
+    <strong th:text="${content.requestDetails.serverName}">SERVER_NAME</strong>
+    is rejected by server owner
+    <strong th:text="${content.approverDetails.displayName}">Approver Name</strong>
+    (<span th:text="${content.approverDetails.employeeId}">EMP_ID</span>).
+    For any further query, please reach out to the approver.
+</p>
+
+<p>
+    <strong>Rejection Comment:</strong><br/>
+    <span th:text="${content.approverComment}">No comments provided</span>
+</p>
+
+<br/>
+
+<p>
+    Thanks!!<br/>
+    <strong>Identity Admin</strong>
+</p>
+
+</body>
+</html>

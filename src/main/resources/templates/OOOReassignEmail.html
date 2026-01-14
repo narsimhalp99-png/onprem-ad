@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.w3.org/1999/xhtml" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Approval Reassigned</title>
+</head>
+<body style="font-family: Arial, sans-serif; font-size: 14px; color: #333;">
+
+<p>
+    Dear <strong th:text="${oldApprover.firstName}">Old Approver</strong>,
+</p>
+
+<p>
+    System has reassigned the below approval item to
+    <strong th:text="${content.approverDetails.displayName}">Approver</strong>
+    (<span th:text="${content.approverDetails.employeeId}">APPROVER_EMP_ID</span>) Since, you're Out Of Office.
+</p>
+
+<p>
+    <strong>Approval Item Details:</strong><br/>
+    <span th:text="${content.workItemType}">WORK_ITEM_TYPE</span>
+    |
+    <span th:text="${content.workItemName}">WORK_ITEM_NAME</span>
+</p>
+
+<p>
+    <strong>Requestor:</strong><br/>
+    <span th:text="${content.requestorDetails.displayName}">Requestor Name</span>
+    (<span th:text="${content.requestorDetails.employeeId}">REQ_EMP_ID</span>)
+</p>
+
+
+<br/>
+
+<p>
+    Thanks!!<br/>
+    <strong>Identity Admin</strong>
+</p>
+
+</body>
+</html>

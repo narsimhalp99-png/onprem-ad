@@ -1,9 +1,6 @@
 package com.amat.approvalmanagement.controller;
 
-import com.amat.approvalmanagement.dto.ApiResponse;
-import com.amat.approvalmanagement.dto.ApprovalActionRequest;
-import com.amat.approvalmanagement.dto.ApprovalDetailsSearchDTO;
-import com.amat.approvalmanagement.dto.ReassignApprovalRequest;
+import com.amat.approvalmanagement.dto.*;
 import com.amat.approvalmanagement.service.ApprovalsService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -17,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/approval-management")
@@ -173,5 +171,15 @@ public class ApprovalsController {
         }
     }
 
+
+    @PostMapping("/get-approval-details-by-id")
+    public ApprovalWithRequestAndUsersDTO getApprovalDetails( HttpServletRequest req) {
+
+        String loggedInUser = req.getHeader("employeeId");
+
+        return approvalService.getApprovalById(UUID.fromString(loggedInUser));
+
+
+    }
 
 }

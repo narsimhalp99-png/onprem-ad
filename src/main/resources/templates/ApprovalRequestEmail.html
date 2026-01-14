@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.w3.org/1999/xhtml" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Server Elevation Approval Request</title>
+</head>
+<body style="font-family: Arial, sans-serif; font-size: 14px; color: #333;">
+
+<p>
+    Dear <strong th:text="${content.approverDetails.firstName}">Approver</strong>,
+</p>
+
+<p>
+    <strong th:text="${content.requestorDetails.displayName}">Requestor Name</strong>
+    (<span th:text="${content.requestorDetails.employeeId}">EMP_ID</span>)
+    has submitted a server elevation request for server
+    <strong th:text="${content.requestDetails.serverName}">SERVER_NAME</strong>
+    for
+    <strong th:text="${content.elevationPeriod}">0</strong> hours.
+    Please
+    <a th:href="${clickHere}" target="_blank">click here</a>
+    to approve or deny the request.
+</p>
+
+<p>
+    <strong>Requestor Comment:</strong><br/>
+    <span th:text="${content.requestDetails.requestorComment}">No comments provided</span>
+</p>
+
+<br/>
+
+<p>
+    Thanks!!<br/>
+    <strong>Identity Admin</strong>
+</p>
+
+</body>
+</html>

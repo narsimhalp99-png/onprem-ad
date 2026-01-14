@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.w3.org/1999/xhtml" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Approval Reassigned</title>
+</head>
+<body style="font-family: Arial, sans-serif; font-size: 14px; color: #333;">
+
+<p>
+    Dear <strong th:text="${content.approverDetails.firstName}">Approver</strong>,
+</p>
+
+<p>
+    <strong th:text="${oldApprover.displayName}">User Name</strong>
+    (<span th:text="${oldApprover.employeeId}">EMP_ID</span>)
+    has reassigned the below approval item from
+    <strong th:text="${oldApprover.displayName}">Old Approver</strong>
+    (<span th:text="${oldApprover.employeeId}">OLD_EMP_ID</span>)
+    to you.
+    Please
+    <a th:href="${clickHere}" target="_blank">click here</a>
+    to approve or reject this request.
+</p>
+
+<p>
+    <strong>Approval Item Details:</strong><br/>
+    <span th:text="${content.workItemType}">WORK_ITEM_TYPE</span>
+    |
+    <span th:text="${content.workItemName}">WORK_ITEM_NAME</span>
+</p>
+
+<p>
+    <strong>Requestor:</strong><br/>
+    <span th:text="${content.requestorDetails.displayName}">Requestor Name</span>
+    (<span th:text="${content.requestorDetails.employeeId}">REQ_EMP_ID</span>)
+</p>
+
+<p>
+    <strong>Reassign Comment:</strong><br/>
+    <span th:text="${content.approverComment}">No comments provided</span>
+</p>
+
+<br/>
+
+<p>
+    Thanks!!<br/>
+    <strong>Identity Admin</strong>
+</p>
+
+</body>
+</html>
