@@ -32,7 +32,10 @@ public class ApprovalDetailsRequestSpecification {
                 log.debug("Applying requestId filter | requestId={}", filter.getRequestId());
                 predicates.add(cb.equal(root.get("requestId"), filter.getRequestId()));
             }
-
+            if (filter.getApprovalId() != null && !filter.getApprovalId().isEmpty()) {
+                log.debug("Applying approvalId filter | approvalId={}", filter.getApprovalId());
+                predicates.add(cb.equal(root.get("approvalId"),java.util.UUID.fromString(filter.getApprovalId())));
+            }
             if (filter.getApprover() != null && !filter.getApprover().isEmpty()) {
                 log.debug("Applying approver filter | approverLike={}", filter.getApprover());
                 predicates.add(cb.like(

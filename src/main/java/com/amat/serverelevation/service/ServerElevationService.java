@@ -492,7 +492,7 @@ public class ServerElevationService {
                  }else{
                     Optional<UserEntity> requestorOptional = userEnrollmentRepository.findById(employeeId);
                     UserEntity requestor = requestorOptional.get();
-                    emailService.sendEmail("#APPROVAL REQUIRED# Server Elevation request submitted by user  " +requestor.getDisplayName() +"("+employeeId +")"+  "for server" + entry.getServerName(),"ApprovalEmail",approvalsService.getApprovalById(UUID.fromString(approvalId)),null,null);
+                    emailService.sendEmail("#APPROVAL REQUIRED# Server Elevation request submitted by user  " +requestor.getDisplayName() +"("+employeeId +")"+  "for server" + entry.getServerName(),"ApprovalRequestEmail",approvalsService.getApprovalById(UUID.fromString(approvalId)),null,null);
                 }
 
 

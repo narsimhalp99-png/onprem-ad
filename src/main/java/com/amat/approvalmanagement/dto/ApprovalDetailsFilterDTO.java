@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 public class ApprovalDetailsFilterDTO {
 
     private String requestId;
+    private String approvalId;
     private String approver;
     private String approvalStatus;
     private String workItemType;
