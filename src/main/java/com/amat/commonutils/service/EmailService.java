@@ -18,6 +18,7 @@ import org.thymeleaf.context.Context;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -37,6 +38,8 @@ public class EmailService {
 
         EmailConfig config = loadEmailConfig();
 
+
+
         if (!isNotificationAllowed(config.getNotificationType())) {
             log.info(
                     "Email notification skipped | NotificationType={}",
@@ -47,9 +50,15 @@ public class EmailService {
 
         log.info("START :: Sending email ");
         String to = getToEmail(templateName,variables,config);
+        String cc = "";
+        String bcc = "";
         if(config.getNotificationType().equalsIgnoreCase("RedirectToEmail")) {
-            subject = "[Original Recipient: "+ to +"]"+ subject;
+            subject = "[Original Recipient: To: "+ to + ", Cc: " + variables.getRequestorDetails().getEmail() +"]"+ " " +  subject;
+        }else{
+            cc = variables.getRequestorDetails().getEmail();
+            bcc = config.getBccEmail();
         }
+
         String clickHere = getClickHere(templateName,config, String.valueOf(variables.getApprovalId()));
         try {
             MimeMessage message = mailSender.createMimeMessage();
@@ -64,7 +73,8 @@ public class EmailService {
             String htmlContent = templateEngine.process(templateName, context);
             helper.setFrom(config.getFromEmail());
             helper.setTo(to);
-            helper.setCc(variables.getRequestorDetails().getEmail());
+            helper.setCc(cc);
+            helper.setBcc(bcc);
             helper.setSubject(subject);
             helper.setText(htmlContent, true);
 
@@ -81,7 +91,7 @@ public class EmailService {
 
         if (config.getNotificationType().equalsIgnoreCase("RedirectToEmail")) {
             to = config.getRedirectionEmail();
-        }else if(config.getNotificationType().equalsIgnoreCase("RedirectToUser") && templateName.equalsIgnoreCase("ApprovedEmail") || templateName.equalsIgnoreCase("ApprovalRequestEmail") || templateName.equalsIgnoreCase("ApprovalReassignedEmail")){
+        }else if(config.getNotificationType().equalsIgnoreCase("RedirectToUser") && templateName.equalsIgnoreCase("Server-Elevation-ApprovedEmail") || templateName.equalsIgnoreCase("Server-Elevation-ApprovalRequestEmail") || templateName.equalsIgnoreCase("ApprovalReassignedEmail")){
             to = variables.getApproverDetails().getEmail();
         }else{
             to = variables.getRequestorDetails().getEmail();
@@ -104,14 +114,14 @@ public class EmailService {
         }
 
         // Approval / Reassign emails
-        if (templateName.equalsIgnoreCase("ApprovalRequestEmail")
+        if (templateName.equalsIgnoreCase("Server-Elevation-ApprovalRequestEmail")
                 || templateName.equalsIgnoreCase("ApprovalReassignedEmail")) {
 
             return baseUrl + "approvals?" + approvalId;
         }
 
         // Approved / Rejected emails to requestor
-        if (templateName.equalsIgnoreCase("ApprovedEmail")
+        if (templateName.equalsIgnoreCase("Server-Elevation-ApprovedEmail")
                 || templateName.equalsIgnoreCase("RejectedEmail")) {
 
             return baseUrl + "server-elevation#myview";
@@ -127,6 +137,18 @@ public class EmailService {
         List<SystemConfigurations> configs =
                 systemConfigurationsRepository.findByConfigType("EmailConfiguration");
 
+        Optional<SystemConfigurations> appBaseUrlConfig =
+                systemConfigurationsRepository.findByConfigTypeAndConfigName(
+                        "GeneralConfiguration",
+                        "appBaseURL"
+                );
+
+        String appBaseURL = appBaseUrlConfig
+                .map(SystemConfigurations::getConfigValue)
+                .orElse(null);
+
+        log.info("appBaseURL from db:::{}", appBaseURL);
+
         Map<String, String> map = configs.stream()
                 .collect(Collectors.toMap(
                         SystemConfigurations::getConfigName,
@@ -137,7 +159,7 @@ public class EmailService {
                 map.get("FromEmail"),
                 map.get("NotificationType"),
                 map.get("RedirectToEmail"), // Redirection email
-                map.get("appBaseURL"),
+                appBaseURL,
                 map.get("BccEmail")         // optional
         );
     }

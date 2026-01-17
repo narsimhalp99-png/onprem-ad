@@ -115,6 +115,22 @@ public class ServerElevationService {
             return response;
         }
 
+        Optional<ServerElevationRequest> existingReq =
+                serverRepo.findByRequestedByAndServerNameAndStatus(
+                        request.getRequestorEmpId(),
+                        request.getServerName(),
+                        ApprovalStatus.Pending_Approval.name()
+                );
+
+        if(existingReq.isPresent()){
+            log.info("Request already present with same details");
+            response.setEligibleForElevation(false);
+            setError(response, "Failed :: Request already present with same details");
+            return response;
+        }
+
+
+
         String requestorDn = (String) requestorData.get(0).get("distinguishedName");
         String userAdminDn = utils.fetchAdminAccountDn(requestorDn);
 
@@ -492,7 +508,7 @@ public class ServerElevationService {
                  }else{
                     Optional<UserEntity> requestorOptional = userEnrollmentRepository.findById(employeeId);
                     UserEntity requestor = requestorOptional.get();
-                    emailService.sendEmail("#APPROVAL REQUIRED# Server Elevation request submitted by user  " +requestor.getDisplayName() +"("+employeeId +")"+  "for server" + entry.getServerName(),"ApprovalRequestEmail",approvalsService.getApprovalById(UUID.fromString(approvalId)),null,null);
+                    emailService.sendEmail("#APPROVAL REQUIRED# Server Elevation request submitted by user  " +requestor.getDisplayName() +"("+employeeId +")"+  "for server" + entry.getServerName(),"Server-Elevation-ApprovalRequestEmail",approvalsService.getApprovalById(UUID.fromString(approvalId)),null,null);
                 }
 
 

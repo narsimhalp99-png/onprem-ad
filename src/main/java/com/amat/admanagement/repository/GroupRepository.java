@@ -276,7 +276,7 @@ public class GroupRepository {
         controls.setSearchScope(SearchControls.OBJECT_SCOPE);
         controls.setReturningAttributes(new String[]{"objectClass"});
 
-        String base = "DC=mycomp,DC=com";
+        String base = defaultBase;
         String relativeDn =
                 dn.endsWith("," + base)
                         ? dn.substring(0, dn.length() - ("," + base).length())
@@ -306,7 +306,7 @@ public class GroupRepository {
         controls.setSearchScope(SearchControls.OBJECT_SCOPE);
         controls.setReturningAttributes(new String[]{"member"});
 
-        String base = "DC=mycomp,DC=com";
+        String base = defaultBase;
         String relativeDn =
                 dn.endsWith("," + base)
                         ? dn.substring(0, dn.length() - ("," + base).length())

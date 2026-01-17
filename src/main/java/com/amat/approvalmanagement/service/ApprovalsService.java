@@ -445,7 +445,7 @@ public class ApprovalsService {
 
 
         if(workItemType.equalsIgnoreCase("SERVER-ELEVATION")){
-            emailService.sendEmail("#REJECTED# Server Elevation request for server " + server, "ApprovalRejectedEmail", getApprovalById(UUID.fromString(approvalId)), null, null);
+            emailService.sendEmail("#REJECTED# Server Elevation request for server " + server, "Server-Elevation-ApprovalRejectedEmail", getApprovalById(UUID.fromString(approvalId)), null, null);
         }
 
     }
@@ -461,7 +461,7 @@ public class ApprovalsService {
 
         if ("SERVER-ELEVATION".equalsIgnoreCase(workItemType)) {
             serverElevationService.performPostApprovalDenyActionServerElevation(loggedInUser, requestId);
-            emailService.sendEmail("#APPROVED# Server Elevation request for server" + server, "ApprovedEmail", getApprovalById(UUID.fromString(approvalId)), null, null);
+            emailService.sendEmail("#APPROVED# Server Elevation request for server" + server, "Server-Elevation-ApprovedEmail", getApprovalById(UUID.fromString(approvalId)), null, null);
 
             log.info(
                     "Post approval action executed for SERVER-ELEVATION | requestId={}",
