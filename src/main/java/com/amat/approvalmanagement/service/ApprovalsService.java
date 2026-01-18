@@ -593,8 +593,7 @@ public class ApprovalsService {
 
         Optional<UserEntity> oldApprovals = userEnrollmentRepository.findById(oldApprover);
 
-        oldApprovals.ifPresent(oldApproverEntity -> emailService.sendEmail("#APPROVAL REQUIRED# Server Elevation request submitted by user" + existing.getRequestee() + "for server" + newApproval.getWorkItemName().split(" \\(")[0], "ApprovalReassignedEmail", getApprovalById(newApproval.getApprovalId()), null, oldApproverEntity));
-
+        oldApprovals.ifPresent(oldApproverEntity -> emailService.sendEmail("#APPROVAL REQUIRED#" + newApproval.getWorkItemType() + " request submitted by user " + existing.getRequestee() + "for server" + newApproval.getWorkItemName().split(" \\(")[0], "ApprovalReassignedEmail", getApprovalById(newApproval.getApprovalId()), null, oldApproverEntity));
 
         log.info(
                 "New approval created | newApprovalId={} | requestId={} | approver={} | status={}",
