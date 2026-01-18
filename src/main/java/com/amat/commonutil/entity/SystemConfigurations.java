@@ -1,4 +1,4 @@
-package com.amat.commonutils.entity;
+package com.amat.commonutil.entity;
 
 
 import jakarta.persistence.*;

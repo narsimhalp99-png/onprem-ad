@@ -1,20 +1,19 @@
 package com.amat.serverelevation.service;
 
-import com.amat.accessmanagement.dto.User;
 import com.amat.accessmanagement.entity.UserEntity;
 import com.amat.accessmanagement.repository.UserEnrollmentRepository;
 import com.amat.approvalmanagement.dto.ReassignApprovalRequest;
 import com.amat.approvalmanagement.service.ApprovalsService;
-import com.amat.commonutils.repository.UserPreferencesRepository;
+import com.amat.commonutil.repository.UserPreferencesRepository;
 import com.amat.accessmanagement.service.RoleService;
 import com.amat.admanagement.dto.*;
 import com.amat.admanagement.service.ComputerService;
 import com.amat.admanagement.service.GroupsService;
 import com.amat.admanagement.service.UserService;
 import com.amat.approvalmanagement.enums.ApprovalStatus;
-import com.amat.commonutils.entity.UserPreferences;
-import com.amat.commonutils.service.EmailService;
-import com.amat.commonutils.utis.CommonUtils;
+import com.amat.commonutil.entity.UserPreferences;
+import com.amat.commonutil.service.EmailService;
+import com.amat.commonutil.utis.CommonUtils;
 import com.amat.serverelevation.DTO.getServerElevationRequests;
 import com.amat.serverelevation.DTO.*;
 import com.amat.approvalmanagement.entity.ApprovalDetails;

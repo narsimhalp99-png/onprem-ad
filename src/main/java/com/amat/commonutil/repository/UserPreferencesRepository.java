@@ -1,6 +1,6 @@
-package com.amat.commonutils.repository;
+package com.amat.commonutil.repository;
 
-import com.amat.commonutils.entity.UserPreferences;
+import com.amat.commonutil.entity.UserPreferences;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface UserPreferencesRepository extends JpaRepository<UserPreferences, String> {

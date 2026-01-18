@@ -1,7 +1,7 @@
-package com.amat.commonutils.utis;
+package com.amat.commonutil.utis;
 
 
-import com.amat.commonutils.entity.UserPreferences;
+import com.amat.commonutil.entity.UserPreferences;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 

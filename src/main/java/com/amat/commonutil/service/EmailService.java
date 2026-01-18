@@ -1,15 +1,13 @@
-package com.amat.commonutils.service;
+package com.amat.commonutil.service;
 
 import com.amat.accessmanagement.entity.UserEntity;
 import com.amat.approvalmanagement.dto.ApprovalWithRequestAndUsersDTO;
-import com.amat.commonutils.dto.EmailConfig;
-import com.amat.commonutils.entity.SystemConfigurations;
-import com.amat.commonutils.repository.SystemConfigurationsRepository;
+import com.amat.commonutil.dto.EmailConfig;
+import com.amat.commonutil.entity.SystemConfigurations;
+import com.amat.commonutil.repository.SystemConfigurationsRepository;
 import jakarta.mail.internet.MimeMessage;
-import jakarta.validation.constraints.Email;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;

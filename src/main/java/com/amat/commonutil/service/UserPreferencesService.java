@@ -1,12 +1,12 @@
-package com.amat.commonutils.service;
+package com.amat.commonutil.service;
 
 
 
-import com.amat.commonutils.dto.UserPreferencesRequest;
-import com.amat.commonutils.dto.UserPreferencesResponse;
-import com.amat.commonutils.entity.UserPreferences;
+import com.amat.commonutil.dto.UserPreferencesRequest;
+import com.amat.commonutil.dto.UserPreferencesResponse;
+import com.amat.commonutil.entity.UserPreferences;
 import com.amat.accessmanagement.repository.UserEnrollmentRepository;
-import com.amat.commonutils.repository.UserPreferencesRepository;
+import com.amat.commonutil.repository.UserPreferencesRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;

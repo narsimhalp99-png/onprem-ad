@@ -1,6 +1,6 @@
-package com.amat.commonutils.repository;
+package com.amat.commonutil.repository;
 
-import com.amat.commonutils.entity.SystemConfigurations;
+import com.amat.commonutil.entity.SystemConfigurations;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

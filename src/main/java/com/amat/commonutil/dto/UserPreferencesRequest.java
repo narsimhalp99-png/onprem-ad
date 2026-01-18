@@ -1,4 +1,4 @@
-package com.amat.commonutils.dto;
+package com.amat.commonutil.dto;
 
 import lombok.Data;
 
