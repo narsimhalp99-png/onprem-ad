@@ -1,18 +1,15 @@
-package com.amat.commonutil.utis;
+package com.amat.commonutils.util;
 
 
 import com.amat.approvalmanagement.dto.ApprovalWithRequestAndUsersDTO;
-import com.amat.commonutil.dto.EmailConfig;
-import com.amat.commonutil.dto.EmailRequest;
-import com.amat.commonutil.entity.SystemConfigurations;
-import com.amat.commonutil.entity.UserPreferences;
-import com.amat.commonutil.repository.SystemConfigurationsRepository;
-import jakarta.mail.internet.MimeMessage;
+import com.amat.commonutils.dto.EmailConfig;
+import com.amat.commonutils.dto.EmailRequest;
+import com.amat.commonutils.entity.SystemConfigurations;
+import com.amat.commonutils.entity.UserPreferences;
+import com.amat.commonutils.repository.SystemConfigurationsRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
-import org.thymeleaf.context.Context;
 
 import java.time.LocalDateTime;
 import java.util.*;

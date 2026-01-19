@@ -1,13 +1,10 @@
-package com.amat.commonutil.service;
+package com.amat.commonutils.service;
 
-import com.amat.accessmanagement.entity.UserEntity;
-import com.amat.approvalmanagement.dto.ApprovalWithRequestAndUsersDTO;
-import com.amat.commonutil.dto.Attachment;
-import com.amat.commonutil.dto.EmailConfig;
-import com.amat.commonutil.dto.EmailRequest;
-import com.amat.commonutil.entity.SystemConfigurations;
-import com.amat.commonutil.repository.SystemConfigurationsRepository;
-import com.amat.commonutil.utis.CommonUtils;
+import com.amat.commonutils.dto.Attachment;
+import com.amat.commonutils.dto.EmailConfig;
+import com.amat.commonutils.dto.EmailRequest;
+import com.amat.commonutils.repository.SystemConfigurationsRepository;
+import com.amat.commonutils.util.CommonUtils;
 import jakarta.mail.internet.MimeMessage;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,11 +16,6 @@ import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service

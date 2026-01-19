@@ -1,4 +1,4 @@
-package com.amat.commonutil.repository;
+package com.amat.commonutils.repository;
 
 
 

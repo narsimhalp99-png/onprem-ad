@@ -1,11 +1,11 @@
-package com.amat.commonutil.controller;
+package com.amat.commonutils.controller;
 
-import com.amat.commonutil.dto.UserPreferencesRequest;
+import com.amat.commonutils.dto.UserPreferencesRequest;
 import com.amat.accessmanagement.dto.UserSearchResponseDTO;
 import com.amat.accessmanagement.entity.UserEntity;
 import com.amat.accessmanagement.service.SearchUsersService;
 import com.amat.accessmanagement.service.UserEnrollmentService;
-import com.amat.commonutil.service.UserPreferencesService;
+import com.amat.commonutils.service.UserPreferencesService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;

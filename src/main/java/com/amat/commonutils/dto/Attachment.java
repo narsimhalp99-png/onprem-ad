@@ -1,4 +1,4 @@
-package com.amat.commonutil.dto;
+package com.amat.commonutils.dto;
 
 
 import lombok.Builder;

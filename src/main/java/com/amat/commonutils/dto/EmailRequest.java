@@ -1,4 +1,4 @@
-package com.amat.commonutil.dto;
+package com.amat.commonutils.dto;
 
 
 import com.amat.approvalmanagement.dto.ApprovalWithRequestAndUsersDTO;
@@ -10,7 +10,6 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 
 @Data
 @Builder
