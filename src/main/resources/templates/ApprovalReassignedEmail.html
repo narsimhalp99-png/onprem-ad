@@ -11,11 +11,11 @@
 </p>
 
 <p>
-    <strong th:text="${oldApprover.displayName}">User Name</strong>
-    (<span th:text="${oldApprover.employeeId}">EMP_ID</span>)
+    <strong th:text="${content.oldApprover.displayName}">User Name</strong>
+    (<span th:text="${content.oldApprover.employeeId}">EMP_ID</span>)
     has reassigned the below approval item from
-    <strong th:text="${oldApprover.displayName}">Old Approver</strong>
-    (<span th:text="${oldApprover.employeeId}">OLD_EMP_ID</span>)
+    <strong th:text="${content.oldApprover.displayName}">Old Approver</strong>
+    (<span th:text="${content.oldApprover.employeeId}">OLD_EMP_ID</span>)
     to you.
     Please
     <a th:href="${clickHere}" target="_blank">click here</a>

@@ -32,6 +32,7 @@ public class ApprovalWithRequestAndUsersDTO {
     private ServerElevationRequest requestDetails;
     private UserEntity requestorDetails;
     private UserEntity approverDetails;
+    private UserEntity oldApprover;
 
 }
 

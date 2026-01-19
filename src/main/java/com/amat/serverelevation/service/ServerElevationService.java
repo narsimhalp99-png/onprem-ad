@@ -2,8 +2,10 @@ package com.amat.serverelevation.service;
 
 import com.amat.accessmanagement.entity.UserEntity;
 import com.amat.accessmanagement.repository.UserEnrollmentRepository;
+import com.amat.approvalmanagement.dto.ApprovalWithRequestAndUsersDTO;
 import com.amat.approvalmanagement.dto.ReassignApprovalRequest;
 import com.amat.approvalmanagement.service.ApprovalsService;
+import com.amat.commonutil.dto.EmailRequest;
 import com.amat.commonutil.repository.UserPreferencesRepository;
 import com.amat.accessmanagement.service.RoleService;
 import com.amat.admanagement.dto.*;
@@ -501,14 +503,29 @@ public class ServerElevationService {
 
                     Optional<UserEntity> ownerUserOptional = userEnrollmentRepository.findById(approverEmpId);
 //                    Optional<UserEntity> oooUserOptional = userEnrollmentRepository.findById(finalApprover);
+
                     if(ownerUserOptional.isPresent()){
-                        emailService.sendEmail("#system  has reassigned below approval item to " + finalApprover +  "for server" + entry.getServerName(),"OOOReassignEmail",approvalsService.getApprovalById(UUID.fromString(approvalId)),null,ownerUserOptional.get());
-                     }
+                        ApprovalWithRequestAndUsersDTO variables = approvalsService.getApprovalById(UUID.fromString(approvalId));
+                        variables.setOldApprover( ownerUserOptional.get());
+                        EmailRequest emailRequest = new EmailRequest();
+                        emailRequest.setTemplateName("OOOReassignEmail");
+                        emailRequest.setVariables(variables);
+                        emailRequest.setSubject("#system  has reassigned below approval item to " + finalApprover +  "for server" + entry.getServerName());
+                        emailRequest = commonUtils.prepareEmailRequest(emailRequest);
+                        emailService.sendEmail(emailRequest);
+                    }
                  }else{
                     Optional<UserEntity> requestorOptional = userEnrollmentRepository.findById(employeeId);
                     UserEntity requestor = requestorOptional.get();
-                    emailService.sendEmail("#APPROVAL REQUIRED# Server Elevation request submitted by user  " +requestor.getDisplayName() +"("+employeeId +")"+  "for server" + entry.getServerName(),"Server-Elevation-ApprovalRequestEmail",approvalsService.getApprovalById(UUID.fromString(approvalId)),null,null);
-                }
+                    ApprovalWithRequestAndUsersDTO variables = approvalsService.getApprovalById(UUID.fromString(approvalId));
+                    EmailRequest emailRequest = new EmailRequest();
+                    emailRequest.setTemplateName("Server-Elevation-ApprovalRequestEmail");
+                    emailRequest.setVariables(variables);
+                    emailRequest.setSubject("#APPROVAL REQUIRED# Server Elevation request submitted by user  " +requestor.getDisplayName() +"("+employeeId +")"+  "for server" + entry.getServerName());
+                    emailRequest = commonUtils.prepareEmailRequest(emailRequest);
+                    emailService.sendEmail(emailRequest);
+
+                  }
 
 
                 results.add(new SubmitResponse(server, ApprovalStatus.Pending_Approval.name(), requestId, approvalId.toUpperCase(), finalApprover.equals(approverEmpId)

@@ -3,6 +3,7 @@ package com.amat.approvalmanagement.service;
 import com.amat.accessmanagement.entity.UserEntity;
 import com.amat.accessmanagement.repository.UserEnrollmentRepository;
 import com.amat.approvalmanagement.dto.*;
+import com.amat.commonutil.dto.EmailRequest;
 import com.amat.commonutil.repository.UserPreferencesRepository;
 import com.amat.accessmanagement.service.RoleService;
 import com.amat.approvalmanagement.enums.ApprovalStatus;
@@ -65,6 +66,7 @@ public class ApprovalsService {
 
     @Autowired
     EmailService emailService;
+
 
     public Object getApprovalDetails(ApprovalDetailsFilterDTO filter, int page, int size, String loggedInUser, boolean isSelf) {
 
@@ -445,7 +447,12 @@ public class ApprovalsService {
 
 
         if(workItemType.equalsIgnoreCase("SERVER-ELEVATION")){
-            emailService.sendEmail("#REJECTED# Server Elevation request for server " + server, "Server-Elevation-ApprovalRejectedEmail", getApprovalById(UUID.fromString(approvalId)), null, null);
+            EmailRequest emailRequest = new EmailRequest();
+            emailRequest.setTemplateName("Server-Elevation-ApprovalRejectedEmail");
+            emailRequest.setVariables(getApprovalById(UUID.fromString(approvalId)));
+            emailRequest.setSubject("#REJECTED# Server Elevation request for server " + server);
+            emailRequest = commonUtils.prepareEmailRequest(emailRequest);
+            emailService.sendEmail(emailRequest);
         }
 
     }
@@ -461,7 +468,13 @@ public class ApprovalsService {
 
         if ("SERVER-ELEVATION".equalsIgnoreCase(workItemType)) {
             serverElevationService.performPostApprovalDenyActionServerElevation(loggedInUser, requestId);
-            emailService.sendEmail("#APPROVED# Server Elevation request for server" + server, "Server-Elevation-ApprovedEmail", getApprovalById(UUID.fromString(approvalId)), null, null);
+
+            EmailRequest emailRequest = new EmailRequest();
+            emailRequest.setTemplateName("Server-Elevation-ApprovedEmail");
+            emailRequest.setVariables(getApprovalById(UUID.fromString(approvalId)));
+            emailRequest.setSubject("#APPROVED# Server Elevation request for server" + server);
+            emailRequest = commonUtils.prepareEmailRequest(emailRequest);
+            emailService.sendEmail(emailRequest);
 
             log.info(
                     "Post approval action executed for SERVER-ELEVATION | requestId={}",
@@ -593,7 +606,15 @@ public class ApprovalsService {
 
         Optional<UserEntity> oldApprovals = userEnrollmentRepository.findById(oldApprover);
 
-        oldApprovals.ifPresent(oldApproverEntity -> emailService.sendEmail("#APPROVAL REQUIRED#" + newApproval.getWorkItemType() + " request submitted by user " + existing.getRequestee() + "for server" + newApproval.getWorkItemName().split(" \\(")[0], "ApprovalReassignedEmail", getApprovalById(newApproval.getApprovalId()), null, oldApproverEntity));
+        ApprovalWithRequestAndUsersDTO variables = getApprovalById(newApproval.getApprovalId());
+        variables.setOldApprover(oldApprovals.get());
+
+        EmailRequest emailRequest = new EmailRequest();
+        emailRequest.setTemplateName("ApprovalReassignedEmail");
+        emailRequest.setVariables(variables);
+        emailRequest.setSubject("#APPROVAL REQUIRED#" + newApproval.getWorkItemType() + " request submitted by user " + existing.getRequestee() + "for server" + newApproval.getWorkItemName().split(" \\(")[0]);
+        emailRequest = commonUtils.prepareEmailRequest(emailRequest);
+        emailService.sendEmail(emailRequest);
 
         log.info(
                 "New approval created | newApprovalId={} | requestId={} | approver={} | status={}",
