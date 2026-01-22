@@ -8,6 +8,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 import org.hibernate.annotations.Generated;
 import org.hibernate.annotations.GenerationTime;
+import org.hibernate.annotations.Where;
 
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
@@ -43,9 +44,10 @@ public class UserEntity {
 
     private OffsetDateTime updatedAt;
 
-    //    @JsonManagedReference
+
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
     @JsonIgnore
+    @Where(clause = "assigned_role_status = true")
     private List<UserRoleMapping> roles;
 
     @JsonIgnore
