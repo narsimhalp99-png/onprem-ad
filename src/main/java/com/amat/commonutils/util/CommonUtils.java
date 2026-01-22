@@ -154,7 +154,7 @@ public class CommonUtils {
 
             bcc = new String[]{config.getBccEmail()};
         }
-
+        emailRequest.setTo(to);
         emailRequest.setSubject(subject);
         emailRequest.setCc(cc);
         emailRequest.setBcc(bcc);

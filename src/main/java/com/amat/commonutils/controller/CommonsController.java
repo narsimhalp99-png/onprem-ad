@@ -1,10 +1,13 @@
 package com.amat.commonutils.controller;
 
+import com.amat.commonutils.dto.SystemConfigUpdateRequest;
 import com.amat.commonutils.dto.UserPreferencesRequest;
 import com.amat.accessmanagement.dto.UserSearchResponseDTO;
 import com.amat.accessmanagement.entity.UserEntity;
 import com.amat.accessmanagement.service.SearchUsersService;
 import com.amat.accessmanagement.service.UserEnrollmentService;
+import com.amat.commonutils.entity.SystemConfigurations;
+import com.amat.commonutils.service.SystemConfigurationsService;
 import com.amat.commonutils.service.UserPreferencesService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -13,6 +16,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -28,6 +32,9 @@ public class CommonsController {
 
     @Autowired
     UserPreferencesService userPreferencesService;
+
+    @Autowired
+    SystemConfigurationsService sysConfigSvc;
 
 
     @GetMapping("/getLoggedInUserDetails")
@@ -152,6 +159,25 @@ public class CommonsController {
         return ResponseEntity.ok(
                 userPreferencesService.getPreferences(employeeId)
         );
+    }
+
+
+    @GetMapping("/system-configurations")
+    public ResponseEntity<List<SystemConfigurations>> getAllConfigs() {
+        return ResponseEntity.ok(sysConfigSvc.getAllConfigs());
+    }
+
+    @GetMapping("/system-configurations/{configType}")
+    public ResponseEntity<List<SystemConfigurations>> getConfigsByType(
+            @PathVariable String configType) {
+        return ResponseEntity.ok(sysConfigSvc.getConfigsByType(configType));
+    }
+
+    @PutMapping("/system-configurations")
+    public ResponseEntity<SystemConfigurations> updateConfig(
+            @RequestBody SystemConfigUpdateRequest request) {
+
+        return ResponseEntity.ok(sysConfigSvc.updateConfigValue(request));
     }
 
 }

@@ -352,20 +352,6 @@ public class ServerElevationService {
             // Validate eligibility (additionalDetails = true to get approvalRequired)
             ServerElevationResponse validation = validateRequest(validateReq);
 
-            Optional<ServerElevationRequest> existingReq =
-                    serverRepo.findByRequestedByAndServerNameAndStatus(
-                            employeeId,
-                            entry.getServerName(),
-                            ApprovalStatus.Pending_Approval.name()
-                    );
-
-            if(existingReq.isPresent()){
-                log.info("Request already present with same details");
-                results.add(new SubmitResponse(server, "Failed :: Request already present with same details", null, null,
-                        validation.getEligibleForElevationMsg()));
-                continue;
-            }
-
             if (!Boolean.TRUE.equals(validation.getEligibleForElevation())) {
                 log.warn("Server not eligible | server={} | reason={}",
                         server, validation.getEligibleForElevationMsg());
