@@ -81,6 +81,9 @@ public class UserEnrollmentService {
 
         UserEntity user = userRepo.findById(employeeId).orElse(null);
 
+
+
+
         if (user == null) {
             log.warn("User not found in DB | employeeId={}", employeeId);
             return null;

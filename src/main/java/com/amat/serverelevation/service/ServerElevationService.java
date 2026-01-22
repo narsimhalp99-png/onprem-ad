@@ -495,6 +495,7 @@ public class ServerElevationService {
                         variables.setOldApprover( ownerUserOptional.get());
                         EmailRequest emailRequest = new EmailRequest();
                         emailRequest.setTemplateName("OOOReassignEmail");
+                        emailRequest.setSubjectTo(new String[]{ variables.getApproverDetails().getEmail() });
                         emailRequest.setVariables(variables);
                         emailRequest.setSubject("#system  has reassigned below approval item to " + finalApprover +  "for server" + entry.getServerName());
                         emailRequest = commonUtils.prepareEmailRequest(emailRequest);
@@ -506,6 +507,7 @@ public class ServerElevationService {
                     ApprovalWithRequestAndUsersDTO variables = approvalsService.getApprovalById(UUID.fromString(approvalId));
                     EmailRequest emailRequest = new EmailRequest();
                     emailRequest.setTemplateName("Server-Elevation-ApprovalRequestEmail");
+                    emailRequest.setSubjectTo(new String[]{ variables.getApproverDetails().getEmail() });
                     emailRequest.setVariables(variables);
                     emailRequest.setSubject("#APPROVAL REQUIRED# Server Elevation request submitted by user  " +requestor.getDisplayName() +"("+employeeId +")"+  "for server" + entry.getServerName());
                     emailRequest = commonUtils.prepareEmailRequest(emailRequest);

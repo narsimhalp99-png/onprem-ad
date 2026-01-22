@@ -45,6 +45,8 @@ public class EmailRequest {
 
     private String clickHere;
 
+    private String[] subjectTo;
+
 }
 
 

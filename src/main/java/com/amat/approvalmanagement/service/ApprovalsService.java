@@ -449,7 +449,9 @@ public class ApprovalsService {
         if(workItemType.equalsIgnoreCase("SERVER-ELEVATION")){
             EmailRequest emailRequest = new EmailRequest();
             emailRequest.setTemplateName("Server-Elevation-ApprovalRejectedEmail");
-            emailRequest.setVariables(getApprovalById(UUID.fromString(approvalId)));
+            ApprovalWithRequestAndUsersDTO variables = getApprovalById(UUID.fromString(approvalId));
+            emailRequest.setVariables(variables);
+            emailRequest.setSubjectTo(new String[]{ variables.getRequestorDetails().getEmail() });
             emailRequest.setSubject("#REJECTED# Server Elevation request for server " + server);
             emailRequest = commonUtils.prepareEmailRequest(emailRequest);
             emailService.sendEmail(emailRequest);
@@ -468,10 +470,11 @@ public class ApprovalsService {
 
         if ("SERVER-ELEVATION".equalsIgnoreCase(workItemType)) {
             serverElevationService.performPostApprovalDenyActionServerElevation(loggedInUser, requestId);
-
+            ApprovalWithRequestAndUsersDTO variables = getApprovalById(UUID.fromString(approvalId));
             EmailRequest emailRequest = new EmailRequest();
             emailRequest.setTemplateName("Server-Elevation-ApprovedEmail");
-            emailRequest.setVariables(getApprovalById(UUID.fromString(approvalId)));
+            emailRequest.setVariables(variables);
+            emailRequest.setSubjectTo(new String[]{ variables.getRequestorDetails().getEmail() });
             emailRequest.setSubject("#APPROVED# Server Elevation request for server" + server);
             emailRequest = commonUtils.prepareEmailRequest(emailRequest);
             emailService.sendEmail(emailRequest);
@@ -612,6 +615,7 @@ public class ApprovalsService {
         EmailRequest emailRequest = new EmailRequest();
         emailRequest.setTemplateName("ApprovalReassignedEmail");
         emailRequest.setVariables(variables);
+        emailRequest.setSubjectTo(new String[]{ variables.getApproverDetails().getEmail() });
         emailRequest.setSubject("#APPROVAL REQUIRED#" + newApproval.getWorkItemType() + " request submitted by user " + existing.getRequestee() + "for server" + newApproval.getWorkItemName().split(" \\(")[0]);
         emailRequest = commonUtils.prepareEmailRequest(emailRequest);
         emailService.sendEmail(emailRequest);

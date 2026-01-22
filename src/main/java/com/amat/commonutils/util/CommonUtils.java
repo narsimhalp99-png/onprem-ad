@@ -140,7 +140,7 @@ public class CommonUtils {
         if ("RedirectToEmail".equalsIgnoreCase(config.getNotificationType())) {
 
             subject = "[Original Recipient: To: "
-                    + Arrays.toString(to)
+                    + Arrays.toString(emailRequest.getSubjectTo())
                     + ", Cc: "
                     + emailRequest.getVariables().getRequestorDetails().getEmail()
                     + "] "
