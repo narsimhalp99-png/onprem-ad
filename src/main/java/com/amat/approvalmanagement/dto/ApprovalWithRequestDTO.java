@@ -26,6 +26,7 @@ public class ApprovalWithRequestDTO {
     private int approvalLevel;
     private LocalDateTime approvalDate;
     private String requestee;
+    private String requestor;
     private String approverName;
     private String requestorEmpId;
     private Object requestDetails;

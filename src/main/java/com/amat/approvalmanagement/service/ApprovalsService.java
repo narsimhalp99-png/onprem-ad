@@ -174,7 +174,7 @@ public class ApprovalsService {
                             .approvalLevel(approval.getApprovalLevel())
                             .approvalDate(approval.getApprovalDate())
                             .requestee(approval.getRequestee())
-//                            .approverName(approval.getA)
+                            .requestor(approval.getRequestor())
                             .requestDetails(requestDetails)
                             .build();
                 });
@@ -548,7 +548,7 @@ public class ApprovalsService {
                         req.getComment()
                 )
         );
-//        existing.setApprovalDate(LocalDateTime.now());
+        existing.setApprovalDate(LocalDateTime.now());
 
         approvalRepo.save(existing);
 
@@ -601,7 +601,7 @@ public class ApprovalsService {
                 .approvalLevel(existing.getApprovalLevel())
                 .approvalStatus(ApprovalStatus.Pending_Approval.name())
                 .requestee(existing.getRequestee())
-//                .requestor(existing.getRequestor())
+                .requestor(existing.getRequestor())
                 .approvalRequestDate(LocalDateTime.now())
                 .build();
 
@@ -744,6 +744,7 @@ public class ApprovalsService {
                         .requestId(approval.getRequestId())
                         .approver(approval.getApprover())
                         .requestee(approval.getRequestee())
+                        .requestor(approval.getRequestor())
                         .workItemName(approval.getWorkItemName())
                         .workItemType(approval.getWorkItemType())
                         .approvalStatus(approval.getApprovalStatus())

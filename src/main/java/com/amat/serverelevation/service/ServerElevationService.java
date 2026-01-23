@@ -465,6 +465,7 @@ public class ServerElevationService {
                         .approvalStatus(ApprovalStatus.Pending_Approval.name())
                         .approvalLevel(1)
                         .requestee(employeeId)
+                        .requestor(employeeId)
                         .build();
 
 

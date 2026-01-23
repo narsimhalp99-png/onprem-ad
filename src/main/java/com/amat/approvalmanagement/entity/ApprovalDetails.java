@@ -58,4 +58,6 @@ public class ApprovalDetails {
 
     private String requestee;
 
+    private String requestor;
+
 }
