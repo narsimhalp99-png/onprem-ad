@@ -8,8 +8,10 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface SystemConfigurationsRepository extends JpaRepository<SystemConfigurations, String> {
+public interface SystemConfigurationsRepository extends JpaRepository<SystemConfigurations, Long> {
 
+
+    List<SystemConfigurations> findAll();
 
     List<SystemConfigurations> findByConfigType(String configType);
 

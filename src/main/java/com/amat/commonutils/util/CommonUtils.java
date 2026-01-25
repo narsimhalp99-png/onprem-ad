@@ -78,16 +78,16 @@ public class CommonUtils {
 
         // Approval / Reassign emails
         if (templateName.equalsIgnoreCase("Server-Elevation-ApprovalRequestEmail")
-                || templateName.equalsIgnoreCase("ApprovalReassignedEmail")) {
+                || templateName.equalsIgnoreCase("ApprovalReassignedEmail")  ) {
 
-            return baseUrl + "approvals?" + approvalId;
+            return baseUrl + "/approvals?" + approvalId;
         }
 
         // Approved / Rejected emails to requestor
         if (templateName.equalsIgnoreCase("Server-Elevation-ApprovedEmail")
                 || templateName.equalsIgnoreCase("RejectedEmail")) {
 
-            return baseUrl + "server-elevation#myview";
+            return baseUrl + "/server-elevation#myview";
         }
 
         return "";
@@ -139,6 +139,7 @@ public class CommonUtils {
         assert emailRequest.getVariables() != null;
         if ("RedirectToEmail".equalsIgnoreCase(config.getNotificationType())) {
 
+
             subject = "[Original Recipient: To: "
                     + Arrays.toString(emailRequest.getSubjectTo())
                     + ", Cc: "
@@ -165,6 +166,24 @@ public class CommonUtils {
         return emailRequest;
 
     }
+
+
+    public Map<String, Map<String, String>> loadSystemConfigurations() {
+
+        List<SystemConfigurations> configs =
+                systemConfigurationsRepository.findAll();
+
+        return configs.stream()
+                .collect(Collectors.groupingBy(
+                        SystemConfigurations::getConfigType,
+                        Collectors.toMap(
+                                SystemConfigurations::getConfigName,
+                                SystemConfigurations::getConfigValue,
+                                (oldVal, newVal) -> newVal   // safety for duplicates
+                        )
+                ));
+    }
+
 
 
 

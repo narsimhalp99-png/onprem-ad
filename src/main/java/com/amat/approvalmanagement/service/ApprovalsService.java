@@ -474,7 +474,7 @@ public class ApprovalsService {
             EmailRequest emailRequest = new EmailRequest();
             emailRequest.setTemplateName("Server-Elevation-ApprovedEmail");
             emailRequest.setVariables(variables);
-            emailRequest.setSubjectTo(new String[]{ variables.getRequestorDetails().getEmail() });
+//            emailRequest.setSubjectTo(new String[]{ variables.getRequestorDetails().getEmail() });
             emailRequest.setSubject("#APPROVED# Server Elevation request for server" + server);
             emailRequest = commonUtils.prepareEmailRequest(emailRequest);
             emailService.sendEmail(emailRequest);
@@ -537,16 +537,18 @@ public class ApprovalsService {
                 existing.getApprovalLevel()
         );
 
+
+        String oldApproverComments =  String.format(
+                "Reassigned from '%s' to '%s' by %s. Comment: %s",
+                oldApprover,
+                req.getNewApprover(),
+                loggedInUser,
+                req.getComment()
+        );
+
         // 2. Update existing approval entry
         existing.setApprovalStatus(ApprovalStatus.ReAssigned.name());
-        existing.setApproverComment(
-                String.format(
-                        "Reassigned from '%s' to '%s' by %s. Comment: %s",
-                        oldApprover,
-                        req.getNewApprover(),
-                        loggedInUser,
-                        req.getComment()
-                )
+        existing.setApproverComment(oldApproverComments
         );
         existing.setApprovalDate(LocalDateTime.now());
 
@@ -611,7 +613,7 @@ public class ApprovalsService {
 
         ApprovalWithRequestAndUsersDTO variables = getApprovalById(newApproval.getApprovalId());
         variables.setOldApprover(oldApprovals.get());
-
+        variables.setOldApproverComments(oldApproverComments);
         EmailRequest emailRequest = new EmailRequest();
         emailRequest.setTemplateName("ApprovalReassignedEmail");
         emailRequest.setVariables(variables);
@@ -712,8 +714,20 @@ public class ApprovalsService {
 
         // 3. Fetch requestor (requestee) details
         UserEntity requestorDetails = null;
-        if (approval.getRequestee() != null) {
+        if (approval.getRequestor() != null) {
             requestorDetails = userEnrollmentRepository
+                    .findByEmployeeId(approval.getRequestor())
+                    .orElse(null);
+
+            log.debug(
+                    "Requestor details resolved | requestee={}",
+                    approval.getRequestor()
+            );
+        }
+
+        UserEntity requesteeDetails = null;
+        if (approval.getRequestee() != null) {
+            requesteeDetails = userEnrollmentRepository
                     .findByEmployeeId(approval.getRequestee())
                     .orElse(null);
 
@@ -753,6 +767,7 @@ public class ApprovalsService {
                         .approvalDate(approval.getApprovalDate())
                         .requestDetails(requestDetails)
                         .requestorDetails(requestorDetails)
+                        .requesteeDetails(requesteeDetails)
                         .approverDetails(approverDetails)
                         .build();
 

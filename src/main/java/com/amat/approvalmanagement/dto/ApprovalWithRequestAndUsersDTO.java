@@ -32,8 +32,10 @@ public class ApprovalWithRequestAndUsersDTO {
     private String requestorEmpId;
     private ServerElevationRequest requestDetails;
     private UserEntity requestorDetails;
+    private UserEntity requesteeDetails;
     private UserEntity approverDetails;
     private UserEntity oldApprover;
+    private String oldApproverComments;
 
 }
 

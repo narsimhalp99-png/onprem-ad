@@ -9,6 +9,7 @@ import com.amat.accessmanagement.service.UserEnrollmentService;
 import com.amat.commonutils.entity.SystemConfigurations;
 import com.amat.commonutils.service.SystemConfigurationsService;
 import com.amat.commonutils.service.UserPreferencesService;
+import com.amat.commonutils.util.CommonUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,6 +36,9 @@ public class CommonsController {
 
     @Autowired
     SystemConfigurationsService sysConfigSvc;
+
+    @Autowired
+    CommonUtils commonUtils;
 
 
     @GetMapping("/getLoggedInUserDetails")
@@ -165,6 +169,11 @@ public class CommonsController {
     @GetMapping("/system-configurations")
     public ResponseEntity<List<SystemConfigurations>> getAllConfigs() {
         return ResponseEntity.ok(sysConfigSvc.getAllConfigs());
+    }
+
+    @GetMapping("/system-configurations/group")
+    public ResponseEntity<?> getAllGroupConfigs() {
+        return ResponseEntity.ok(commonUtils.loadSystemConfigurations());
     }
 
     @GetMapping("/system-configurations/{configType}")
