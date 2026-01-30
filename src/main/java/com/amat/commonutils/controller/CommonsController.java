@@ -7,6 +7,8 @@ import com.amat.accessmanagement.entity.UserEntity;
 import com.amat.accessmanagement.service.SearchUsersService;
 import com.amat.accessmanagement.service.UserEnrollmentService;
 import com.amat.commonutils.entity.SystemConfigurations;
+import com.amat.commonutils.repository.AuditRepository;
+import com.amat.commonutils.service.AuditService;
 import com.amat.commonutils.service.SystemConfigurationsService;
 import com.amat.commonutils.service.UserPreferencesService;
 import com.amat.commonutils.util.CommonUtils;
@@ -40,6 +42,8 @@ public class CommonsController {
     @Autowired
     CommonUtils commonUtils;
 
+    @Autowired
+    AuditService auditService;
 
     @GetMapping("/getLoggedInUserDetails")
     public ResponseEntity<Object> getUser(
@@ -168,6 +172,17 @@ public class CommonsController {
 
     @GetMapping("/system-configurations")
     public ResponseEntity<List<SystemConfigurations>> getAllConfigs() {
+        auditService.auditAdOperation(
+                "SERVER-ELEVATION",
+                "loggedInUser",
+                "ACTIVE-DIRECTORY",
+                "MEMBER_ADD",
+                "groupDn",
+                null,
+                "useradminDN",
+                "RequestId: " + "123423424"
+        );
+
         return ResponseEntity.ok(sysConfigSvc.getAllConfigs());
     }
 
