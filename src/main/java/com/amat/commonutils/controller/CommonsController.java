@@ -8,6 +8,7 @@ import com.amat.accessmanagement.service.SearchUsersService;
 import com.amat.accessmanagement.service.UserEnrollmentService;
 import com.amat.commonutils.entity.SystemConfigurations;
 import com.amat.commonutils.repository.AuditRepository;
+import com.amat.commonutils.service.ADAccountService;
 import com.amat.commonutils.service.AuditService;
 import com.amat.commonutils.service.SystemConfigurationsService;
 import com.amat.commonutils.service.UserPreferencesService;
@@ -44,6 +45,9 @@ public class CommonsController {
 
     @Autowired
     AuditService auditService;
+
+    @Autowired
+    ADAccountService adAccountService;
 
     @GetMapping("/getLoggedInUserDetails")
     public ResponseEntity<Object> getUser(
@@ -202,6 +206,30 @@ public class CommonsController {
             @RequestBody SystemConfigUpdateRequest request) {
 
         return ResponseEntity.ok(sysConfigSvc.updateConfigValue(request));
+    }
+
+    @GetMapping("/ad/account-status/{accountName}")
+    public ResponseEntity<?> checkStatus(@PathVariable String accountName) {
+        return ResponseEntity.ok(
+                adAccountService.checkAccountStatus(accountName)
+        );
+    }
+    @PostMapping("/ad/unlock/{accountName}")
+    public ResponseEntity<?> unlock(@PathVariable String accountName) {
+        adAccountService.unlockAccount(accountName);
+        return ResponseEntity.ok(Map.of("message", "Account unlocked successfully"));
+    }
+    @PostMapping("/ad/reset-password")
+    public ResponseEntity<?> resetPassword(
+            @RequestParam String accountName,
+            @RequestParam String newPassword
+    ) throws Exception {
+
+        adAccountService.resetPassword(accountName, newPassword);
+
+        return ResponseEntity.ok(
+                Map.of("message", "Password reset successfully")
+        );
     }
 
 }
